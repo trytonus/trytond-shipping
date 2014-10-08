@@ -28,4 +28,4 @@ class Carrier:
 
         Downstream shipping modules can implement this to get shipping rates.
         """
-        return []
+        return []  # pragma: no cover
