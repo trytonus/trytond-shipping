@@ -27,7 +27,7 @@ class ShipmentOut:
     tracking_number = fields.Char('Tracking Number', states=STATES)
 
     package_weight = fields.Function(
-        fields.Float("Package weight", digits=(16,  2)),
+        fields.Numeric("Package weight", digits=(16,  2)),
         'get_package_weight'
     )
 
@@ -60,7 +60,7 @@ class ShipmentOut:
         weight_uom = self._get_weight_uom()
         return sum(
             map(
-                lambda move: Decimal(move.get_weight(weight_uom, silent=True)),
+                lambda move: move.get_weight(weight_uom, silent=True),
                 self.moves
             )
         )
@@ -109,7 +109,7 @@ class StockMove:
         else:
             quantity = self.quantity
 
-        weight = float(self.product.weight) * quantity
+        weight = self.product.weight * quantity
 
         # Compare product weight uom with the weight uom used by carrier
         # and calculate weight if botth are not same
@@ -119,4 +119,4 @@ class StockMove:
                 weight,
                 weight_uom
             )
-        return math.ceil(weight)
+        return Decimal(math.ceil(weight))
