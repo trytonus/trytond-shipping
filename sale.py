@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    shipment.py
+    sale.py
 
     :copyright: (c) 2014 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
@@ -10,44 +10,50 @@ from decimal import Decimal
 
 from trytond.model import fields
 from trytond.pool import PoolMeta, Pool
-from trytond.pyson import Eval
 
+__all__ = ['SaleLine', 'Sale']
 __metaclass__ = PoolMeta
-__all__ = ['ShipmentOut', 'StockMove']
-
-STATES = {
-    'readonly': Eval('state') == 'done',
-}
 
 
-class ShipmentOut:
-    "Shipment Out"
-    __name__ = 'stock.shipment.out'
+class Sale:
+    "Sale"
+    __name__ = 'sale.sale'
 
-    tracking_number = fields.Char('Tracking Number', states=STATES)
+    package_weight = fields.Function(
+        fields.Float("Package weight", digits=(16,  2)),
+        'get_package_weight'
+    )
+
+    def get_package_weight(self, name):
+        """
+        Returns sum of weight associated with each line
+        """
+        return sum(
+            map(lambda line: line.get_weight(), self.lines)
+        )
 
 
-class StockMove:
-    "Stock move"
-    __name__ = "stock.move"
+class SaleLine:
+    'Sale Line'
+    __name__ = 'sale.line'
 
     @classmethod
     def __setup__(cls):
-        super(StockMove, cls).__setup__()
+        super(SaleLine, cls).__setup__()
         cls._error_messages.update({
-            'weight_required':
-                'Weight for product %s in stock move is missing',
+            'weight_required': 'Weight is missing on the product %s',
         })
 
     def get_weight(self, weight_uom):
         """
-        Returns weight as required for carrier
+        Returns weight as required for carriers
 
-        :param weight_uom: Weight uom used by carrier
+        :param weight_uom: Weight uom used by carriers
         """
         ProductUom = Pool().get('product.uom')
 
-        if self.quantity <= 0:
+        if not self.product or self.quantity <= 0 or \
+                self.product.type == 'service':
             return Decimal('0')
 
         if not self.product.template.weight:
@@ -58,9 +64,9 @@ class StockMove:
 
         # Find the quantity in the default uom of the product as the weight
         # is for per unit in that uom
-        if self.uom != self.product.default_uom:
+        if self.unit != self.product.default_uom:
             quantity = ProductUom.compute_qty(
-                self.uom,
+                self.unit,
                 self.quantity,
                 self.product.default_uom
             )
@@ -75,6 +81,6 @@ class StockMove:
             weight = ProductUom.compute_qty(
                 self.product.weight_uom,
                 weight,
-                weight_uom
+                weight_uom,
             )
         return math.ceil(weight)
