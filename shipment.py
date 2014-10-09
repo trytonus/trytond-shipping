@@ -26,6 +26,45 @@ class ShipmentOut:
 
     tracking_number = fields.Char('Tracking Number', states=STATES)
 
+    package_weight = fields.Function(
+        fields.Float("Package weight", digits=(16,  2)),
+        'get_package_weight'
+    )
+
+    weight_uom = fields.Function(
+        fields.Many2One('product.uom', 'Weight UOM'),
+        'get_weight_uom'
+    )
+
+    def get_weight_uom(self, name):
+        """
+        Returns weight uom for the package
+        """
+        return self._get_weight_uom().id
+
+    def _get_weight_uom(self):
+        """
+        Returns Pound as default value for uom
+
+        Downstream module can override this method to change weight uom as per
+        carrier
+        """
+        UOM = Pool().get('product.uom')
+
+        return UOM.search([('symbol', '=', 'lb')])[0]
+
+    def get_package_weight(self, name):
+        """
+        Returns sum of weight associated with each move line
+        """
+        weight_uom = self._get_weight_uom()
+        return sum(
+            map(
+                lambda move: Decimal(move.get_weight(weight_uom, silent=True)),
+                self.moves
+            )
+        )
+
 
 class StockMove:
     "Stock move"
@@ -39,18 +78,21 @@ class StockMove:
                 'Weight for product %s in stock move is missing',
         })
 
-    def get_weight(self, weight_uom):
+    def get_weight(self, weight_uom, silent=False):
         """
         Returns weight as required for carrier
 
         :param weight_uom: Weight uom used by carrier
+        :param silent: Raise error if not silent
         """
         ProductUom = Pool().get('product.uom')
 
         if self.quantity <= 0:
             return Decimal('0')
 
-        if not self.product.template.weight:
+        if not self.product.weight:
+            if silent:
+                return Decimal('0')
             self.raise_user_error(
                 'weight_required',
                 error_args=(self.product.name,)
