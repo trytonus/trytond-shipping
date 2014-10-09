@@ -5,5 +5,15 @@
             <label name="tracking_number"/>
             <field name="tracking_number"/>
         </group>
+
+    </xpath>
+
+    <xpath expr="//field[@name='warehouse']" position="after">
+        <group id="package details" string="Package Details" colspan="4">
+            <label name="package_weight"/>
+            <field name="package_weight"/>
+            <label name="weight_uom"/>
+            <field name="weight_uom"/>
+        </group>
     </xpath>
 </data>

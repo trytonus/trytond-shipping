@@ -9,7 +9,7 @@ from trytond.pool import Pool
 
 from carrier import Carrier
 from shipment import ShipmentOut, StockMove
-from sale import SaleLine
+from sale import Sale, SaleLine
 
 
 def register():
@@ -17,6 +17,7 @@ def register():
         Carrier,
         ShipmentOut,
         StockMove,
+        Sale,
         SaleLine,
         module='shipping', type_='model'
     )

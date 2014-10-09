@@ -92,48 +92,6 @@ class TestShipping(unittest.TestCase):
         self.uom_kg, = self.Uom.search([('symbol', '=', 'kg')])
         self.uom_pound, = self.Uom.search([('symbol', '=', 'lb')])
 
-        account_revenue, = self.Account.search([
-            ('kind', '=', 'revenue')
-        ])
-
-        # Create product category
-        category, = self.Category.create([{
-            'name': 'Test Category',
-        }])
-
-        # Create product
-        template, = self.Template.create([{
-            'name': 'Test Product',
-            'category': category.id,
-            'type': 'goods',
-            'sale_uom': self.uom_kg,
-            'list_price': Decimal('10'),
-            'cost_price': Decimal('5'),
-            'default_uom': self.uom_kg,
-            'salable': True,
-            'account_revenue': account_revenue.id,
-            'products': [('create', self.Template.default_products())]
-        }])
-
-        self.product = template.products[0]
-
-        # Carrier Carrier Product
-        carrier_product_template, = self.Template.create([{
-            'name': 'Test Carrier Product',
-            'category': category.id,
-            'type': 'service',
-            'salable': True,
-            'sale_uom': self.uom_kg,
-            'list_price': Decimal('10'),
-            'cost_price': Decimal('5'),
-            'default_uom': self.uom_kg,
-            'cost_price_method': 'fixed',
-            'account_revenue': account_revenue.id,
-            'products': [('create', self.Template.default_products())]
-        }])
-
-        self.carrier_product = carrier_product_template.products[0]
-
         self.sale_party, = self.Party.create([{
             'name': 'Test Sale Party',
             'vat_number': '123456',
@@ -146,6 +104,37 @@ class TestShipping(unittest.TestCase):
                 'subdivision': subdivision_florida.id,
             }])]
         }])
+
+    def create_product(self, weight=None, weight_uom=None, is_service=False):
+        """
+        Create product
+        """
+        # Create product category
+        category, = self.Category.create([{
+            'name': 'Test Category',
+        }])
+
+        account_revenue, = self.Account.search([
+            ('kind', '=', 'revenue')
+        ])
+
+        # Create product
+        template, = self.Template.create([{
+            'name': 'Test Product',
+            'category': category.id,
+            'type': is_service and 'service' or 'goods',
+            'sale_uom': self.uom_kg,
+            'list_price': Decimal('10'),
+            'cost_price': Decimal('5'),
+            'default_uom': self.uom_kg,
+            'weight': weight,
+            'weight_uom': weight_uom,
+            'salable': True,
+            'account_revenue': account_revenue.id,
+            'products': [('create', self.Template.default_products())]
+        }])
+
+        return template.products[0]
 
     def _create_coa_minimal(self, company):
         """Create a minimal chart of accounts
@@ -212,7 +201,8 @@ class TestShipping(unittest.TestCase):
 
     def test_0005_sale_line_weight(self):
         '''
-        Check weight for product in sale line
+        Check weight for product in sale line and total package weight
+        for sale
         '''
 
         with Transaction().start(DB_NAME, USER, context=CONTEXT):
@@ -229,102 +219,110 @@ class TestShipping(unittest.TestCase):
                 }])
 
             # Sale line without product
-            sale_line, = self.SaleLine.create([{
+            sale_line1, = self.SaleLine.create([{
                 'sale': sale.id,
                 'type': 'line',
                 'quantity': 1,
                 'unit_price': Decimal('10.00'),
                 'description': 'Test Description1',
-                'unit': self.product.template.default_uom,
+                'unit': self.uom_kg,
             }])
-            weight = sale_line.get_weight(self.uom_kg)
+            weight = sale_line1.get_weight(self.uom_kg)
 
             self.assertEqual(weight, Decimal('0'))
 
             # Sale line with product but quantity as 0
-            sale_line, = self.SaleLine.create([{
+            product = self.create_product(0.5, self.uom_kg)
+            sale_line2, = self.SaleLine.create([{
                 'sale': sale.id,
                 'type': 'line',
                 'quantity': 0,
-                'product': self.product.id,
+                'product': product.id,
                 'unit_price': Decimal('10.00'),
                 'description': 'Test Description1',
-                'unit': self.product.template.default_uom,
+                'unit': product.template.default_uom,
             }])
-            weight = sale_line.get_weight(self.uom_kg)
+            weight = sale_line2.get_weight(self.uom_kg)
 
             self.assertEqual(weight, Decimal('0'))
 
             # Sale line with service product and quantity > 0
-            sale_line, = self.SaleLine.create([{
+            service_product = self.create_product(
+                0.5, self.uom_kg, is_service=True
+            )
+            sale_line3, = self.SaleLine.create([{
                 'sale': sale.id,
                 'type': 'line',
                 'quantity': 1,
-                'product': self.carrier_product.id,
+                'product': service_product.id,
                 'unit_price': Decimal('10.00'),
                 'description': 'Test Description1',
-                'unit': self.carrier_product.template.default_uom,
+                'unit': service_product.template.default_uom,
             }])
 
-            weight = sale_line.get_weight(self.uom_kg)
+            weight = sale_line3.get_weight(self.uom_kg)
 
             self.assertEqual(weight, Decimal('0'))
 
             # Sale line with product having no weight
-            sale_line, = self.SaleLine.create([{
+            product = self.create_product()
+            sale_line4, = self.SaleLine.create([{
                 'sale': sale.id,
                 'type': 'line',
                 'quantity': 1,
-                'product': self.product.id,
+                'product': product.id,
                 'unit_price': Decimal('10.00'),
                 'description': 'Test Description1',
-                'unit': self.product.template.default_uom,
+                'unit': product.template.default_uom,
             }])
 
             with self.assertRaises(Exception):
-                sale_line.get_weight(self.uom_pound)
-
-            # Assign weight
-            self.product.template.weight = Decimal('0.5')
-            self.product.template.weight_uom = self.uom_kg
-            self.product.template.save()
+                sale_line4.get_weight(self.uom_pound)
 
             # Sale line with uom different from product uom
-            sale_line, = self.SaleLine.create([{
+            product = self.create_product(0.5, self.uom_kg)
+            sale_line5, = self.SaleLine.create([{
                 'sale': sale.id,
                 'type': 'line',
                 'quantity': 1,
-                'product': self.product.id,
+                'product': product.id,
                 'unit_price': Decimal('10.00'),
                 'description': 'Test Description1',
                 'unit': self.uom_pound,
             }])
 
-            weight = sale_line.get_weight(self.uom_pound)
+            weight = sale_line5.get_weight(self.uom_pound)
 
             self.assertEqual(weight, Decimal('1.0'))
 
             # Sale line with uom same as product uom
-            sale_line, = self.SaleLine.create([{
+            product = self.create_product(3, self.uom_kg)
+            sale_line6, = self.SaleLine.create([{
                 'sale': sale.id,
                 'type': 'line',
                 'quantity': 1,
-                'product': self.product.id,
+                'product': product,
                 'unit_price': Decimal('10.00'),
                 'description': 'Test Description1',
-                'unit': self.product.template.default_uom,
+                'unit': product.template.default_uom,
             }])
 
-            weight = sale_line.get_weight(self.uom_kg)
+            weight = sale_line6.get_weight(self.uom_kg)
 
-            self.assertEqual(weight, Decimal('1.0'))
+            self.assertEqual(weight, Decimal('3'))
 
-    def test_0005_stock_move_weight(self):
+            self.assertEqual(sale.weight_uom.name, 'Pound')
+
+            # 0.5 kg + 3.5 kg = 7.7 pounds = 8 pounds (after round off)
+            self.assertEqual(sale.package_weight, Decimal('8'))
+
+    def test_0010_stock_move_weight(self):
         '''
         Check weight for product in shipment
         '''
         StockLocation = POOL.get('stock.location')
         StockMove = POOL.get('stock.move')
+        ShipmentOut = POOL.get('stock.shipment.out')
 
         with Transaction().start(DB_NAME, USER, context=CONTEXT):
             self.setup_defaults()
@@ -340,60 +338,70 @@ class TestShipping(unittest.TestCase):
             with Transaction().set_context(company=self.company.id):
 
                 # Stock move with quantity as 0
-                move, = StockMove.create([{
+                product = self.create_product(0.5, self.uom_kg)
+                move1, = StockMove.create([{
                     'from_location': customer_location.id,
                     'to_location': input_location.id,
-                    'product': self.product.id,
-                    'uom': self.product.template.default_uom,
+                    'product': product.id,
+                    'uom': product.template.default_uom,
                     'quantity': 0,
                 }])
 
                 self.assertEqual(
-                    move.get_weight(self.uom_pound), Decimal('0')
+                    move1.get_weight(self.uom_pound), Decimal('0')
                 )
 
                 # Stock move with product having no weight
-                move, = StockMove.create([{
+                product = self.create_product()
+                move2, = StockMove.create([{
                     'from_location': customer_location.id,
                     'to_location': input_location.id,
-                    'product': self.product.id,
+                    'product': product.id,
                     'quantity': 1,
-                    'uom': self.product.template.default_uom,
+                    'uom': product.template.default_uom,
                 }])
 
                 with self.assertRaises(Exception):
-                    move.get_weight(self.uom_pound)
-
-                # Assign weight
-                self.product.template.weight = Decimal('0.5')
-                self.product.template.weight_uom = self.uom_kg
-                self.product.template.save()
+                    move2.get_weight(self.uom_pound)
 
                 # Stock move with uom different from product uom
-                move, = StockMove.create([{
+                product = self.create_product(0.5, self.uom_kg)
+                move3, = StockMove.create([{
                     'from_location': customer_location.id,
                     'to_location': input_location.id,
-                    'product': self.product.id,
+                    'product': product.id,
                     'quantity': 1,
                     'uom': self.uom_pound,
                 }])
 
                 self.assertEqual(
-                    move.get_weight(self.uom_pound), Decimal('1.0')
+                    move3.get_weight(self.uom_pound), Decimal('1.0')
                 )
 
                 # Stock move with uom as product uom
-                move, = StockMove.create([{
+                product = self.create_product(3, self.uom_kg)
+                move4, = StockMove.create([{
                     'from_location': customer_location.id,
                     'to_location': input_location.id,
-                    'product': self.product.id,
+                    'product': product.id,
                     'quantity': 1,
-                    'uom': self.product.template.default_uom,
+                    'uom': product.template.default_uom,
                 }])
 
                 self.assertEqual(
-                    move.get_weight(self.uom_kg), Decimal('1.0')
+                    move4.get_weight(self.uom_kg), Decimal('3')
                 )
+
+                shipment, = ShipmentOut.create([{
+                    'customer': self.sale_party.id,
+                    'delivery_address': self.sale_party.addresses[0].id,
+                    'moves': [('add', [move1, move2, move3, move4])]
+                }])
+
+                self.assertEqual(shipment.weight_uom.name, 'Pound')
+
+                # 0.5 kg + 3.5 kg = 7.7 pounds = 8 pounds (after round off)
+                self.assertEqual(shipment.package_weight, Decimal('8'))
 
 
 def suite():
