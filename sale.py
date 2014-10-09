@@ -20,7 +20,7 @@ class Sale:
     __name__ = 'sale.sale'
 
     package_weight = fields.Function(
-        fields.Float("Package weight", digits=(16,  2)),
+        fields.Numeric("Package weight", digits=(16,  2)),
         'get_package_weight'
     )
 
@@ -53,7 +53,7 @@ class Sale:
         weight_uom = self._get_weight_uom()
         return sum(
             map(
-                lambda line: Decimal(line.get_weight(weight_uom, silent=True)),
+                lambda line: line.get_weight(weight_uom, silent=True),
                 self.lines
             )
         )
@@ -102,7 +102,7 @@ class SaleLine:
         else:
             quantity = self.quantity
 
-        weight = float(self.product.weight) * quantity
+        weight = self.product.weight * quantity
 
         # Compare product weight uom with the weight uom used by carrier
         # and calculate weight if botth are not same
@@ -112,4 +112,5 @@ class SaleLine:
                 weight,
                 weight_uom,
             )
-        return math.ceil(weight)
+
+        return Decimal(math.ceil(weight))

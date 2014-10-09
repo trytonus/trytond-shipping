@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <data>
-    <xpath expr="//field[@name='carrier']" position="after">
-        <group id="package details" string="Package Details" colspan="4">
+    <xpath expr="//notebook" position="inside">
+        <page id="carrier" string="Carrier Details">
             <label name="package_weight"/>
             <field name="package_weight"/>
             <label name="weight_uom"/>
             <field name="weight_uom"/>
-        </group>
+        </page>
     </xpath>
 </data>
