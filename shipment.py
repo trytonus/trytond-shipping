@@ -61,7 +61,7 @@ class ShipmentOut:
         return sum(
             map(
                 lambda move: move.get_weight(weight_uom, silent=True),
-                self.moves
+                self.outgoing_moves
             )
         )
 
