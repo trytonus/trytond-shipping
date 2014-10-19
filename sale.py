@@ -51,9 +51,15 @@ class Sale:
         Returns sum of weight associated with each line
         """
         weight_uom = self._get_weight_uom()
+        return self._get_package_weight(weight_uom)
+
+    def _get_package_weight(self, uom):
+        """
+        Returns sum of weight associated with package
+        """
         return sum(
             map(
-                lambda line: line.get_weight(weight_uom, silent=True),
+                lambda line: line.get_weight(uom, silent=True),
                 self.lines
             )
         )
