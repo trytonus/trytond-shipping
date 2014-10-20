@@ -1,0 +1,4 @@
+<form string="Carrier Configuration">
+    <label name="save_carrier_logs" />
+    <field name="save_carrier_logs" />
+</form>

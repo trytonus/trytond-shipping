@@ -47,6 +47,8 @@ class TestShipping(unittest.TestCase):
         self.User = POOL.get('res.user')
         self.Account = POOL.get('account.account')
         self.Product = POOL.get('product.product')
+        self.Carrier = POOL.get('carrier')
+        self.CarrierConf = POOL.get('carrier.configuration')
 
     def setup_defaults(self):
         """
@@ -60,8 +62,10 @@ class TestShipping(unittest.TestCase):
         }])
 
         with Transaction().set_context(company=None):
-            company_party, = self.Party.create([{
+            company_party, carrier_party = self.Party.create([{
                 'name': 'Test Party',
+            }, {
+                'name': 'Carrier Party',
             }])
 
         self.company, = self.Company.create([{
@@ -104,6 +108,16 @@ class TestShipping(unittest.TestCase):
                 'country': country_us.id,
                 'subdivision': subdivision_florida.id,
             }])]
+        }])
+
+        carrier_product = self.create_product(is_service=True)
+
+        self.carrier, = self.Carrier.create([{
+            'party': carrier_party,
+            'carrier_product': carrier_product,
+        }])
+        self.CarrierConf.create([{
+            'save_carrier_logs': True
         }])
 
     def create_product(self, weight=None, weight_uom=None, is_service=False):
@@ -411,6 +425,52 @@ class TestShipping(unittest.TestCase):
                 # Shipment package weight
                 # 0.5 kg + 3.0 kg = 7.7 pounds = 8 pounds (after round off)
                 self.assertEqual(shipment.package_weight, Decimal('8'))
+
+    def test_0015_sale_shipment_carrier_log(self):
+        '''
+        Test sale and shipment carrier log
+        '''
+        with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.setup_defaults()
+
+            # Create sale order
+            with Transaction().set_context(company=self.company.id):
+                sale, = self.Sale.create([{
+                    'reference': 'S-1001',
+                    'payment_term': self.payment_term.id,
+                    'party': self.sale_party.id,
+                    'invoice_address': self.sale_party.addresses[0].id,
+                    'shipment_address': self.sale_party.addresses[0].id,
+                    'carrier': self.carrier,
+                }])
+
+                # Sale line with uom same as product uom
+                product = self.create_product(3, self.uom_kg)
+                sale_line6, = self.SaleLine.create([{
+                    'sale': sale.id,
+                    'type': 'line',
+                    'quantity': 1,
+                    'product': product,
+                    'unit_price': Decimal('10.00'),
+                    'description': 'Test Description1',
+                    'unit': product.template.default_uom,
+                }])
+
+                sale.add_carrier_log("-- Log Data --", self.carrier)
+                self.assertEqual(len(sale.carrier_logs), 1)
+                self.assertEqual(sale.carrier_logs[0].log, "-- Log Data --")
+
+                self.Sale.quote([sale])
+                self.Sale.confirm([sale])
+                self.Sale.process([sale])
+
+                self.assertEqual(len(sale.shipments), 1)
+
+                shipment, = sale.shipments
+
+                shipment.add_carrier_log("-- Log Data --", self.carrier)
+                self.assertEqual(len(shipment.carrier_logs), 1)
+                self.assertEqual(shipment.carrier_logs[0].log, "-- Log Data --")
 
 
 def suite():

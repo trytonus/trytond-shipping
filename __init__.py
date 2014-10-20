@@ -7,14 +7,17 @@
 """
 from trytond.pool import Pool
 
-from carrier import Carrier
+from carrier import Carrier, CarrierConfig
 from shipment import ShipmentOut, StockMove
 from sale import Sale, SaleLine
+from log import CarrierLog
 
 
 def register():
     Pool.register(
+        CarrierConfig,
         Carrier,
+        CarrierLog,
         ShipmentOut,
         StockMove,
         Sale,

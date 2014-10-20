@@ -6,9 +6,21 @@
     :license: BSD, see LICENSE for more details.
 """
 from trytond.pool import PoolMeta
+from trytond.model import ModelView, ModelSQL, ModelSingleton, fields
 
-__all__ = ['Carrier']
+__all__ = ['Carrier', 'CarrierConfig']
 __metaclass__ = PoolMeta
+
+
+class CarrierConfig(ModelSingleton, ModelSQL, ModelView):
+    "Carrier Configuration"
+    __name__ = 'carrier.configuration'
+
+    save_carrier_logs = fields.Boolean('Save Carrier Logs')
+
+    @staticmethod
+    def default_save_carrier_logs():
+        return True
 
 
 class Carrier:
