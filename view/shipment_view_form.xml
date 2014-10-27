@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<data>
+    <xpath expr="//field[@name=&quot;carrier&quot;]" position="after">
+        <group col="6" colspan="2" id="group_checkboxes">
+            <label name="tracking_number"/>
+            <field name="tracking_number"/>
+        </group>
+
+    </xpath>
+
+    <xpath expr="//notebook" position="inside">
+        <page id="carrier" string="Carrier Details">
+            <label name="package_weight"/>
+            <field name="package_weight"/>
+            <label name="weight_uom"/>
+            <field name="weight_uom"/>
+        </page>
+    </xpath>
+</data>
