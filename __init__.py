@@ -8,7 +8,10 @@
 from trytond.pool import Pool
 
 from carrier import Carrier, CarrierConfig
-from shipment import ShipmentOut, StockMove
+from shipment import (
+    ShipmentOut, StockMove, GenerateShippingLabelMessage, GenerateShippingLabel,
+    ShippingCarrier
+)
 from sale import Sale, SaleLine
 from log import CarrierLog
 
@@ -22,5 +25,11 @@ def register():
         StockMove,
         Sale,
         SaleLine,
+        GenerateShippingLabelMessage,
+        ShippingCarrier,
         module='shipping', type_='model'
+    )
+    Pool.register(
+        GenerateShippingLabel,
+        module='shipping', type_='wizard'
     )
