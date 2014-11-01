@@ -6,6 +6,8 @@
             <field name="package_weight"/>
             <label name="weight_uom"/>
             <field name="weight_uom"/>
+            <newline />
+            <field name="carrier_logs" colspan="4"/>
         </page>
     </xpath>
 </data>

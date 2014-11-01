@@ -19,6 +19,9 @@ class Sale:
     "Sale"
     __name__ = 'sale.sale'
 
+    carrier_logs = fields.One2Many(
+        'carrier.log', 'sale', 'Carrier Logs', readonly=True
+    )
     package_weight = fields.Function(
         fields.Numeric("Package weight", digits=(16,  2)),
         'get_package_weight'
@@ -63,6 +66,23 @@ class Sale:
                 self.lines
             )
         )
+
+    def add_carrier_log(self, log_data, carrier):
+        """
+        Save log for sale
+        """
+        CarrierLog = Pool().get('carrier.log')
+        Config = Pool().get('carrier.configuration')
+
+        if not Config(1).save_carrier_logs:
+            return
+
+        log, = CarrierLog.create([{
+            'sale': self.id,
+            'carrier': carrier,
+            'log': log_data,
+        }])
+        return log
 
 
 class SaleLine:
