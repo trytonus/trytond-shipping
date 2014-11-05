@@ -39,6 +39,13 @@ class ShipmentOut:
         'get_weight_uom'
     )
 
+    computed_weight = fields.Function(
+        fields.Numeric("Computed Weight", digits=(16,  2)),
+        'get_computed_weight'
+    )
+
+    override_weight = fields.Numeric("Override Weight", digits=(16,  2))
+
     def get_weight_uom(self, name):
         """
         Returns weight uom for the package
@@ -57,6 +64,13 @@ class ShipmentOut:
         return UOM.search([('symbol', '=', 'lb')])[0]
 
     def get_package_weight(self, name):
+        """
+        Returns package weight if weight is not overriden
+        otherwise returns overriden weight
+        """
+        return self.override_weight or self.get_computed_weight()
+
+    def get_computed_weight(self, name=None):
         """
         Returns sum of weight associated with each move line
         """

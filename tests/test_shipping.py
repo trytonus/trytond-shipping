@@ -424,7 +424,20 @@ class TestShipping(unittest.TestCase):
 
                 # Shipment package weight
                 # 0.5 kg + 3.0 kg = 7.7 pounds = 8 pounds (after round off)
+                self.assertEqual(shipment.computed_weight, Decimal('8'))
+
+                self.assertFalse(shipment.override_weight)
+
+                # Since weight is not overridden, package weight will be
+                # computed weight
                 self.assertEqual(shipment.package_weight, Decimal('8'))
+
+                shipment.override_weight = Decimal('20')
+                shipment.save()
+
+                # Since overridden weight is there, package weight will be
+                # overridden weight
+                self.assertEqual(shipment.package_weight, Decimal('20'))
 
     def test_0015_sale_shipment_carrier_log(self):
         '''
