@@ -4,16 +4,22 @@
         <group col="6" colspan="2" id="group_checkboxes">
             <label name="tracking_number"/>
             <field name="tracking_number"/>
+            <label name="override_weight"/>
+            <field name="override_weight"/>
         </group>
 
     </xpath>
 
     <xpath expr="//notebook" position="inside">
         <page id="carrier" string="Carrier Details">
+            <label name="computed_weight"/>
+            <field name="computed_weight"/>
             <label name="package_weight"/>
             <field name="package_weight"/>
             <label name="weight_uom"/>
             <field name="weight_uom"/>
+            <newline />
+            <field name="carrier_logs" colspan="4"/>
         </page>
     </xpath>
 </data>

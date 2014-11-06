@@ -26,6 +26,9 @@ class ShipmentOut:
 
     tracking_number = fields.Char('Tracking Number', states=STATES)
 
+    carrier_logs = fields.One2Many(
+        'carrier.log', 'shipment_out', 'Carrier Logs', readonly=True
+    )
     package_weight = fields.Function(
         fields.Numeric("Package weight", digits=(16,  2)),
         'get_package_weight'
@@ -35,6 +38,13 @@ class ShipmentOut:
         fields.Many2One('product.uom', 'Weight UOM'),
         'get_weight_uom'
     )
+
+    computed_weight = fields.Function(
+        fields.Numeric("Computed Weight", digits=(16,  2)),
+        'get_computed_weight'
+    )
+
+    override_weight = fields.Numeric("Override Weight", digits=(16,  2))
 
     def get_weight_uom(self, name):
         """
@@ -55,6 +65,13 @@ class ShipmentOut:
 
     def get_package_weight(self, name):
         """
+        Returns package weight if weight is not overriden
+        otherwise returns overriden weight
+        """
+        return self.override_weight or self.get_computed_weight()
+
+    def get_computed_weight(self, name=None):
+        """
         Returns sum of weight associated with each move line
         """
         weight_uom = self._get_weight_uom()
@@ -64,6 +81,23 @@ class ShipmentOut:
                 self.outgoing_moves
             )
         )
+
+    def add_carrier_log(self, log_data, carrier):
+        """
+        Save log for shipment out
+        """
+        CarrierLog = Pool().get('carrier.log')
+        Config = Pool().get('carrier.configuration')
+
+        if not Config(1).save_carrier_logs:
+            return
+
+        log, = CarrierLog.create([{
+            'shipment_out': self.id,
+            'carrier': carrier,
+            'log': log_data,
+        }])
+        return log
 
 
 class StockMove:

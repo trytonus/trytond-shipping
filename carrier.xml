@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<tryton>
+  <data>
+
+      <record model="ir.ui.view" id="carrier_configuration_view_form">
+          <field name="model">carrier.configuration</field>
+          <field name="type">form</field>
+          <field name="name">carrier_configuration_form</field>
+      </record>
+      <record model="ir.action.act_window" id="act_carrier_configuration_form">
+          <field name="name">Configuration</field>
+          <field name="res_model">carrier.configuration</field>
+      </record>
+      <record model="ir.action.act_window.view"
+          id="act_carrier_configuration_view1">
+          <field name="sequence" eval="1"/>
+          <field name="view" ref="carrier_configuration_view_form"/>
+          <field name="act_window" ref="act_carrier_configuration_form"/>
+      </record>
+
+      <menuitem name="Configuration" parent="carrier.menu_carrier"
+          id="menu_configuration" sequence="0" icon="tryton-preferences"/>
+      <menuitem parent="menu_configuration"
+          action="act_carrier_configuration_form"
+          id="menu_carrier_configuration" icon="tryton-list"/>
+
+  </data>
+</tryton>
