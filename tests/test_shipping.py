@@ -312,7 +312,7 @@ class TestShipping(unittest.TestCase):
 
             weight = sale_line5.get_weight(self.uom_pound)
 
-            self.assertEqual(weight, Decimal('1.0'))
+            self.assertEqual(weight, Decimal('0.5'))
 
             # Sale line with uom same as product uom
             product = self.create_product(3, self.uom_kg)
@@ -332,8 +332,10 @@ class TestShipping(unittest.TestCase):
 
             self.assertEqual(sale.weight_uom.name, 'Pound')
 
-            # 0.5 kg + 3.5 kg = 7.7 pounds = 8 pounds (after round off)
-            self.assertEqual(sale.package_weight, Decimal('8'))
+            # 0.5 kg + 3.0 kg = 3.5 kg = 7.11 pounds (approx.)
+            self.assertAlmostEqual(
+                sale.package_weight, Decimal('7.11'), delta=0.001
+            )
 
     def test_0010_stock_move_weight(self):
         '''
@@ -384,7 +386,7 @@ class TestShipping(unittest.TestCase):
 
                 weight = sale_line5.get_weight(self.uom_pound)
 
-                self.assertEqual(weight, Decimal('1.0'))
+                self.assertEqual(weight, Decimal('0.5'))
 
                 # Sale line with uom same as product uom
                 product = self.create_product(3, self.uom_kg)
@@ -405,8 +407,11 @@ class TestShipping(unittest.TestCase):
                 self.assertEqual(sale.weight_uom.name, 'Pound')
 
                 # Sale package weight
-                # 0.5 kg + 3.0 kg = 7.7 pounds = 8 pounds (after round off)
-                self.assertEqual(sale.package_weight, Decimal('8'))
+
+                # 0.5 kg + 3.0 kg = 3.5 kg = 7.11 pounds (approx.)
+                self.assertAlmostEqual(
+                    sale.package_weight, Decimal('7.11'), delta=0.001
+                )
 
                 self.Sale.quote([sale])
 
@@ -424,13 +429,17 @@ class TestShipping(unittest.TestCase):
 
                 # Shipment package weight
                 # 0.5 kg + 3.0 kg = 7.7 pounds = 8 pounds (after round off)
-                self.assertEqual(shipment.computed_weight, Decimal('8'))
+                self.assertAlmostEqual(
+                    shipment.computed_weight, Decimal('7.11'), delta=0.001
+                )
 
                 self.assertFalse(shipment.override_weight)
 
                 # Since weight is not overridden, package weight will be
                 # computed weight
-                self.assertEqual(shipment.package_weight, Decimal('8'))
+                self.assertAlmostEqual(
+                    shipment.package_weight, Decimal('7.11'), delta=0.001
+                )
 
                 shipment.override_weight = Decimal('20')
                 shipment.save()
