@@ -5,7 +5,6 @@
     :copyright: (c) 2014 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
-import math
 from decimal import Decimal
 
 from trytond.model import fields
@@ -139,4 +138,4 @@ class SaleLine:
                 weight_uom,
             )
 
-        return Decimal(math.ceil(weight))
+        return Decimal(weight)
