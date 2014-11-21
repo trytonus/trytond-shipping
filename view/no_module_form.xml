@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form string="No Shipping Module Found" col="2">
+    <field name="no_module_msg"/>
+</form>

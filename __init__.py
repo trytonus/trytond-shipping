@@ -10,7 +10,7 @@ from trytond.pool import Pool
 from carrier import Carrier, CarrierConfig
 from shipment import (
     ShipmentOut, StockMove, GenerateShippingLabelMessage, GenerateShippingLabel,
-    ShippingCarrier
+    ShippingCarrierSelector, ShippingLabelNoModules
 )
 from sale import Sale, SaleLine
 from log import CarrierLog
@@ -26,7 +26,8 @@ def register():
         Sale,
         SaleLine,
         GenerateShippingLabelMessage,
-        ShippingCarrier,
+        ShippingLabelNoModules,
+        ShippingCarrierSelector,
         module='shipping', type_='model'
     )
     Pool.register(

@@ -16,7 +16,7 @@ from trytond.transaction import Transaction
 __metaclass__ = PoolMeta
 __all__ = [
     'ShipmentOut', 'StockMove', 'GenerateShippingLabelMessage',
-    'GenerateShippingLabel', 'ShippingCarrier'
+    'GenerateShippingLabel', 'ShippingCarrierSelector', 'ShippingLabelNoModules'
 ]
 
 STATES = {
@@ -49,6 +49,26 @@ class ShipmentOut:
     )
 
     override_weight = fields.Numeric("Override Weight", digits=(16,  2))
+
+    @classmethod
+    def __setup__(cls):
+        cls._buttons.update({
+            'label_wizard': {
+                'invisible': ~Eval('state').in_(['packed', 'done'])
+            },
+        })
+        cls._error_messages.update({
+            'no_shipments': 'There must be atleast one shipment.',
+            'too_many_shipments': 'The wizard can be called on only one shipment'  # noqa
+        })
+
+    @classmethod
+    @ModelView.button_action('shipping.wizard_generate_shipping_label')
+    def label_wizard(cls, shipments):
+        if len(shipments) == 0:
+            cls.raise_user_error('no_shipments')
+        elif len(shipments) > 1:
+            cls.raise_user_error('too_many_shipments')
 
     def get_weight_uom(self, name):
         """
@@ -102,6 +122,19 @@ class ShipmentOut:
             'log': log_data,
         }])
         return log
+
+    def allow_label_generation(self):
+        """
+        Shipment must be in the right states and tracking number must not
+        be present.
+        """
+        if self.state not in ('packed', 'done'):
+            self.raise_user_error('invalid_state')
+
+        if self.tracking_number:
+            self.raise_user_error('tracking_number_already_present')
+
+        return True
 
 
 class StockMove:
@@ -161,60 +194,74 @@ class StockMove:
         return Decimal(weight)
 
 
-class ShippingCarrier(ModelView):  # pragma: no cover
+class ShippingCarrierSelector(ModelView):
     'View To Select Carrier'
-    __name__ = 'shipping.carrier'
+    __name__ = 'shipping.label.start'
 
+    carrier = fields.Many2One(
+        "carrier", "Carrier", required=True
+    )
     shipment = fields.Many2One(
         'stock.shipment.out', 'Shipment', required=True, readonly=True
     )
-    carrier = fields.Many2One(
-        "carrier", "Carrier", required=True, depends=['shipment']
-    )
-    cost = fields.Numeric("Cost", digits=(16, 2))
-    cost_currency = fields.Many2One(
-        'currency.currency', 'Cost Currency', required=True
-    )
-
-    @staticmethod
-    def default_cost():
-        return Decimal('0')
-
-    @fields.depends('carrier', 'shipment', 'cost', 'cost_currency')
-    def on_change_carrier(self):
-        res = dict.fromkeys(['cost_currency', 'cost'])
-        if self.carrier and self.shipment:
-            self.shipment.carrier = self.carrier
-            with Transaction().set_context(self.shipment.get_carrier_context()):
-                cost, currency_id = self.carrier.get_sale_price()
-                res['cost'] = cost
-                res['cost_currency'] = currency_id
-        return res
 
 
-class GenerateShippingLabelMessage(ModelView):  # pragma: no cover
+class GenerateShippingLabelMessage(ModelView):
     'Generate UPS Labels Message'
-    __name__ = 'generate.shipping.label.message'
+    __name__ = 'shipping.label.end'
 
     tracking_number = fields.Char("Tracking number", readonly=True)
     message = fields.Text("Message", readonly=True)
+    attachments = fields.One2Many(
+        'ir.attachment', None,
+        'Attachments', readonly=True
+    )
+    cost = fields.Numeric("Cost", digits=(16, 2), readonly=True)
+    cost_currency = fields.Many2One(
+        'currency.currency', 'Cost Currency', required=True, readonly=True
+    )
 
 
-class GenerateShippingLabel(Wizard):  # pragma: no cover
+class ShippingLabelNoModules(ModelView):
+    'Wizard State for No Modules'
+    __name__ = 'shipping.label.no_modules'
+
+    no_module_msg = fields.Text("Message", readonly=True)
+
+    @staticmethod
+    def default_no_module_msg():
+        """
+        Returns default message.
+        """
+        return (
+            'No shipping module is available for label generation.'
+            'Please install a shipping module first.'
+        )
+
+
+class GenerateShippingLabel(Wizard):
     'Generate Labels'
-    __name__ = 'generate.shipping.label'
+    __name__ = 'shipping.label'
 
     start = StateView(
-        'shipping.carrier',
+        'shipping.label.start',
         'shipping.select_carrier_view_form',
         [
-            Button('Continue', 'next', 'tryton-ok'),
+            Button('Continue', 'next', 'tryton-go-next'),
         ]
     )
     next = StateTransition()
 
+    no_modules = StateView(
+        'shipping.label.no_modules',
+        'shipping.no_module_view_form',
+        [
+            Button('Ok', 'end', 'tryton-ok')
+        ]
+    )
+
     generate = StateView(
-        'generate.shipping.label.message',
+        'shipping.label.end',
         'shipping.generate_shipping_label_message_view_form',
         [
             Button('Ok', 'end', 'tryton-ok'),
@@ -231,78 +278,86 @@ class GenerateShippingLabel(Wizard):  # pragma: no cover
                 'shipment is in Packed or Done states only',
         })
 
-    def _get_message(self):
+    def _get_message(self):  # pragma: no cover
         """
         Returns message to be displayed on wizard
         """
+        shipment = self.start.shipment
         message = 'Shipment labels have been generated via %s and saved as ' \
             'attachments for the shipment' % (
-                self.start.shipment.carrier.carrier_cost_method.upper()
+                shipment.carrier.carrier_cost_method.upper()
             )
         return message
 
-    def validate_shipment(self):
-        """
-        Label can be genrated only for 1 shipment
-        """
+    def default_start(self, data):
         Shipment = Pool().get('stock.shipment.out')
 
-        try:
-            shipment, = Shipment.browse(Transaction().context['active_ids'])
-        except ValueError:
-            self.raise_user_error(
-                'This wizard can be called for only one shipment at a time'
-            )
-
-        if shipment.state not in ('packed', 'done'):
-            self.raise_user_error('invalid_state')
-
-        if shipment.tracking_number:
-            self.raise_user_error('tracking_number_already_present')
-
-        return shipment
-
-    def default_start(self, data):
-        shipment = self.validate_shipment()
+        shipment = Shipment(Transaction().context.get('active_id'))
 
         values = {
             'shipment': shipment.id,
-            'is_done': (shipment.state == 'done')
         }
 
         if shipment.carrier:
-            res = shipment.on_change_carrier()
             values.update({
                 'carrier': shipment.carrier.id,
-                'cost': res.get('cost'),
-                'cost_currency': res.get('cost_currency')
             })
         return values
 
-    def default_generate(self, data):  # pragma: no cover
-        return {
-            'tracking_number': self.generate_label(),
-            'message': self._get_message()
+    def transition_next(self):
+        return 'no_modules'
+
+    def default_generate(self, data):
+        shipment = self.update_shipment()
+        shipment.save()
+
+        if shipment.allow_label_generation():
+            tracking_number = self.generate_label(shipment)
+
+        values = {
+            'tracking_number': tracking_number,
+            'message': self._get_message(),
+            'attachments': self.get_attachments(),
+            'cost': shipment.cost,
+            'cost_currency': shipment.cost_currency.id,
         }
+
+        return values
+
+    def get_attachments(self):  # pragma: no cover
+        """
+        Returns list of attachments corresponding to shipment.
+        """
+        Attachment = Pool().get('ir.attachment')
+
+        shipment = self.start.shipment
+
+        # TODO: Show attachments related to this label.
+
+        return map(
+            int, Attachment.search([
+                (
+                    'resource', '=', '%s,%d' %
+                    (shipment.__name__, shipment.id))
+            ])
+        )
 
     def update_shipment(self):
         """
-        Returns updated shipment
+        Returns unsaved instance of shipment.
+        Downstream modules can update the field.
         """
         shipment = self.start.shipment
         shipment.carrier = self.start.carrier
-        shipment.cost = self.start.cost
-        shipment.cost_currency = self.start.cost_currency
-        shipment.save()
 
         return shipment
 
-    def generate_label(self):
+    def generate_label(self, shipment):
         """
         Generate label for carrier chosen
-        """
-        shipment = self.update_shipment()
 
+        :param shipment: Active record used to generate label
+        """
         method_name = 'make_%s_labels' % shipment.carrier.carrier_cost_method
 
         if not hasattr(shipment, method_name):
@@ -311,7 +366,3 @@ class GenerateShippingLabel(Wizard):  # pragma: no cover
             )
 
         return getattr(shipment, method_name)()
-
-    def transition_next(self):
-        return 'generate'
->>>>>>> Add general wizard to generate shipping lables #6059

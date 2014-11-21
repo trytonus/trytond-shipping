@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<form string="Shipping Labels Generated" col="2">
-    <label name="carrier"/>
-    <field name="carrier"/>
-    <label name="cost"/>
-    <field name="cost"/>
-    <label name="cost_currency"/>
-    <field name="cost_currency"/>
-</form>
