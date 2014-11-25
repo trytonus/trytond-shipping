@@ -18,6 +18,7 @@ from decimal import Decimal
 import trytond.tests.test_tryton
 from trytond.tests.test_tryton import POOL, DB_NAME, USER, CONTEXT
 from trytond.transaction import Transaction
+from trytond.exceptions import UserError
 
 
 class TestShipping(unittest.TestCase):
@@ -33,12 +34,15 @@ class TestShipping(unittest.TestCase):
         trytond.tests.test_tryton.install_module('shipping')
 
         self.Party = POOL.get('party.party')
+        self.PartyContact = POOL.get('party.contact_mechanism')
+        self.Address = POOL.get('party.address')
         self.Category = POOL.get('product.category')
         self.Party = POOL.get('party.party')
         self.Payment_term = POOL.get('account.invoice.payment_term')
         self.Country = POOL.get('country.country')
         self.CountrySubdivision = POOL.get('country.subdivision')
         self.Sale = POOL.get('sale.sale')
+        self.SaleConfiguration = POOL.get('sale.configuration')
         self.Currency = POOL.get('currency.currency')
         self.Company = POOL.get('company.company')
         self.Template = POOL.get('product.template')
@@ -49,6 +53,10 @@ class TestShipping(unittest.TestCase):
         self.Product = POOL.get('product.product')
         self.Carrier = POOL.get('carrier')
         self.CarrierConf = POOL.get('carrier.configuration')
+        self.LabelWizard = POOL.get('shipping.label', type='wizard')
+        self.Attachment = POOL.get('ir.attachment')
+        self.Shipment = POOL.get('stock.shipment.out')
+        self.StockLocation = POOL.get('stock.location')
 
     def setup_defaults(self):
         """
@@ -64,6 +72,7 @@ class TestShipping(unittest.TestCase):
         with Transaction().set_context(company=None):
             company_party, carrier_party = self.Party.create([{
                 'name': 'Test Party',
+                'vat_number': '33065',
             }, {
                 'name': 'Carrier Party',
             }])
@@ -71,6 +80,11 @@ class TestShipping(unittest.TestCase):
         self.company, = self.Company.create([{
             'party': company_party.id,
             'currency': currency.id,
+        }])
+        self.PartyContact.create([{
+            'type': 'phone',
+            'value': '8005551212',
+            'party': self.company.party.id
         }])
         country_us, = self.Country.create([{
             'name': 'United States',
@@ -107,7 +121,12 @@ class TestShipping(unittest.TestCase):
                 'city': 'Miami, Miami-Dade',
                 'country': country_us.id,
                 'subdivision': subdivision_florida.id,
-            }])]
+            }])],
+        }])
+        self.PartyContact.create([{
+            'type': 'phone',
+            'value': '8005763279',
+            'party': self.sale_party.id
         }])
 
         carrier_product = self.create_product(is_service=True)
@@ -119,6 +138,20 @@ class TestShipping(unittest.TestCase):
         self.CarrierConf.create([{
             'save_carrier_logs': True
         }])
+
+        warehouse_address, = self.Address.create([{
+            'party': self.company.party.id,
+            'name': 'Amine Khechfe',
+            'street': '247 High Street',
+            'zip': '32003',
+            'city': 'Palo Alto',
+            'country': country_us.id,
+            'subdivision': subdivision_florida.id,
+        }])
+
+        warehouse = self.StockLocation.search([('type', '=', 'warehouse')])[0]
+        warehouse.address = warehouse_address
+        warehouse.save()
 
     def create_product(self, weight=None, weight_uom=None, is_service=False):
         """
@@ -493,6 +526,116 @@ class TestShipping(unittest.TestCase):
                 shipment.add_carrier_log("-- Log Data --", self.carrier)
                 self.assertEqual(len(shipment.carrier_logs), 1)
                 self.assertEqual(shipment.carrier_logs[0].log, "-- Log Data --")
+
+    def test_0020_wizard_create(self):
+        """
+        Test creation of label generation wizard.
+        """
+        with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.setup_defaults()
+
+            session_id, start_state, end_state = self.LabelWizard.create()
+            self.assertEqual(start_state, 'start')
+            self.assertEqual(end_state, 'end')
+            self.assert_(session_id)
+
+    def test_0025_wizard_delete(self):
+        """
+        Tests deletion of label generation wizard.
+        """
+        with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.setup_defaults()
+
+            session_id, start_state, end_state = self.LabelWizard.create()
+            self.LabelWizard.delete(session_id)
+
+    def test_0030_wizard_execute(self):
+        """
+        Tests execution of label generation wizard.
+        """
+        with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.setup_defaults()
+
+            with Transaction().set_context(company=self.company.id):
+                sale, = self.Sale.create([{
+                    'reference': 'S-1001',
+                    'payment_term': self.payment_term.id,
+                    'party': self.sale_party.id,
+                    'invoice_address': self.sale_party.addresses[0].id,
+                    'shipment_address': self.sale_party.addresses[0].id,
+                    'carrier': self.carrier,
+                }])
+
+                # Sale line with uom same as product uom
+                product = self.create_product(3, self.uom_kg)
+                sale_line6, = self.SaleLine.create([{
+                    'sale': sale.id,
+                    'type': 'line',
+                    'quantity': 1,
+                    'product': product,
+                    'unit_price': Decimal('10.00'),
+                    'description': 'Test Description1',
+                    'unit': product.template.default_uom,
+                }])
+
+                self.Sale.quote([sale])
+                self.Sale.confirm([sale])
+                self.Sale.process([sale])
+
+                self.assertEqual(len(sale.shipments), 1)
+
+                self.Shipment.assign(sale.shipments)
+
+            with Transaction().set_context(
+                    active_id=sale.shipments[0], company=self.company.id
+            ):
+                # UserError as shipment not in packed or done state.
+                with self.assertRaises(UserError):
+                    session_id, start_state, end_state = self.LabelWizard.create()  # noqa
+                    data = {
+                        start_state: {
+                            'carrier': self.carrier,
+                            'shipment': sale.shipments[0],
+                        },
+                    }
+
+                    result = self.LabelWizard.execute(
+                        session_id, data, 'generate'
+                    )
+
+            self.Shipment.pack(sale.shipments)
+            with Transaction().set_context(
+                    active_id=sale.shipments[0], company=self.company.id
+            ):
+                session_id, start_state, end_state = self.LabelWizard.create()
+                result = self.LabelWizard.execute(session_id, {}, start_state)
+                self.assertEqual(result.keys(), ['view'])
+                self.assertEqual(result['view']['buttons'], [
+                    {
+                        'default': False,
+                        'states': '{}',
+                        'state': 'next',
+                        'string': 'Continue',
+                        'icon': 'tryton-go-next'
+                    }
+                ])
+                self.assertEqual(len(self.Attachment.search([])), 0)
+
+                data = {
+                    start_state: {
+                        'carrier': self.carrier,
+                        'shipment': sale.shipments[0],
+                    },
+                }
+
+                # UserError is thrown in this case.
+                # Label generation feature is unavailable in this module.
+                with self.assertRaises(UserError):
+                    result = self.LabelWizard.execute(
+                        session_id, data, 'generate'
+                    )
+                # No attachments.
+                self.assertEqual(len(self.Attachment.search([])), 0)
 
 
 def suite():
