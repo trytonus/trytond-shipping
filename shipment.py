@@ -305,6 +305,9 @@ class GenerateShippingLabel(Wizard):
         return values
 
     def transition_next(self):
+        Shipment = Pool().get('stock.shipment.out')
+
+        self.start.shipment = Shipment(Transaction().context.get('active_id'))
         return 'no_modules'
 
     def default_generate(self, data):
