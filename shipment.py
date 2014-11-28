@@ -10,7 +10,7 @@ from decimal import Decimal
 from trytond.model import fields, ModelView
 from trytond.pool import PoolMeta, Pool
 from trytond.wizard import Wizard, StateView, Button, StateTransition
-from trytond.pyson import Eval
+from trytond.pyson import Eval, Or
 from trytond.transaction import Transaction
 
 __metaclass__ = PoolMeta
@@ -54,7 +54,10 @@ class ShipmentOut:
     def __setup__(cls):
         cls._buttons.update({
             'label_wizard': {
-                'invisible': ~Eval('state').in_(['packed', 'done'])
+                'invisible': Or(
+                    (~Eval('state').in_(['packed', 'done'])),
+                    (Eval('tracking_number') != '')
+                )
             },
         })
         cls._error_messages.update({
@@ -294,14 +297,16 @@ class GenerateShippingLabel(Wizard):
 
         shipment = Shipment(Transaction().context.get('active_id'))
 
-        values = {
-            'shipment': shipment.id,
-        }
+        if shipment.allow_label_generation():
+            values = {
+                'shipment': shipment.id,
+            }
 
         if shipment.carrier:
             values.update({
                 'carrier': shipment.carrier.id,
             })
+
         return values
 
     def transition_next(self):
@@ -314,8 +319,7 @@ class GenerateShippingLabel(Wizard):
         shipment = self.update_shipment()
         shipment.save()
 
-        if shipment.allow_label_generation():
-            tracking_number = self.generate_label(shipment)
+        tracking_number = self.generate_label(shipment)
 
         values = {
             'tracking_number': tracking_number,
