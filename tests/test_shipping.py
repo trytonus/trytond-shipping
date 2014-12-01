@@ -13,6 +13,7 @@ DIR = os.path.abspath(os.path.normpath(os.path.join(
 if os.path.isdir(DIR):
     sys.path.insert(0, os.path.dirname(DIR))
 import unittest
+from datetime import date
 from decimal import Decimal
 
 import trytond.tests.test_tryton
@@ -636,6 +637,45 @@ class TestShipping(unittest.TestCase):
                     )
                 # No attachments.
                 self.assertEqual(len(self.Attachment.search([])), 0)
+
+    def test_0035_wizard_button(self):
+        """
+        Test that the label wizard button works properly.
+        """
+        with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.setup_defaults()
+
+            # Pass empty list.
+            # no_shipments error.
+            with self.assertRaises(UserError):
+                self.Shipment.label_wizard([])
+
+            with Transaction().set_context({'company': self.company.id}):
+                shipment1, = self.Shipment.create([{
+                    'planned_date': date.today(),
+                    'effective_date': date.today(),
+                    'customer': self.sale_party.id,
+                    'warehouse': self.StockLocation.search([
+                        ('type', '=', 'warehouse')
+                    ])[0],
+                    'delivery_address': self.sale_party.addresses[0],
+                }])
+                shipment2, = self.Shipment.create([{
+                    'planned_date': date.today(),
+                    'effective_date': date.today(),
+                    'customer': self.sale_party.id,
+                    'warehouse': self.StockLocation.search([
+                        ('type', '=', 'warehouse')
+                    ])[0],
+                    'delivery_address': self.sale_party.addresses[0],
+                }])
+
+            # Too many shipments.
+            with self.assertRaises(UserError):
+                self.Shipment.label_wizard([shipment1, shipment2])
+
+            # One shipment works.
+            self.Shipment.label_wizard([shipment1])
 
 
 def suite():
