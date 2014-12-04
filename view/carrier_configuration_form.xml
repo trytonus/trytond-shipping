@@ -1,4 +1,6 @@
 <form string="Carrier Configuration">
     <label name="save_carrier_logs" />
     <field name="save_carrier_logs" />
+    <label name="default_validation_provider" />
+    <field name="default_validation_provider" />
 </form>

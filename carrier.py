@@ -17,10 +17,21 @@ class CarrierConfig(ModelSingleton, ModelSQL, ModelView):
     __name__ = 'carrier.configuration'
 
     save_carrier_logs = fields.Boolean('Save Carrier Logs')
+    default_validation_provider = fields.Selection(
+        'get_default_validation_providers', 'Default Validation Provider'
+    )
 
     @staticmethod
     def default_save_carrier_logs():
         return True
+
+    @classmethod
+    def get_default_validation_providers(cls):
+        """
+        Downstream modules can implement `_<provider>_address_validation`
+        method in address and append <provider> to this list.
+        """
+        return [(None, '')]
 
 
 class Carrier:
