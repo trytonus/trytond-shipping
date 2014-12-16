@@ -597,6 +597,8 @@ class TestShipping(unittest.TestCase):
                         start_state: {
                             'carrier': self.carrier,
                             'shipment': sale.shipments[0],
+                            'override_weight':
+                                sale.shipments[0].override_weight,
                         },
                     }
 
@@ -626,6 +628,7 @@ class TestShipping(unittest.TestCase):
                     start_state: {
                         'carrier': self.carrier,
                         'shipment': sale.shipments[0],
+                        'override_weight': sale.shipments[0].override_weight,
                     },
                 }
 
