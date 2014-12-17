@@ -613,15 +613,6 @@ class TestShipping(unittest.TestCase):
                 session_id, start_state, end_state = self.LabelWizard.create()
                 result = self.LabelWizard.execute(session_id, {}, start_state)
                 self.assertEqual(result.keys(), ['view'])
-                self.assertEqual(result['view']['buttons'], [
-                    {
-                        'default': False,
-                        'states': '{}',
-                        'state': 'next',
-                        'string': 'Continue',
-                        'icon': 'tryton-go-next'
-                    }
-                ])
                 self.assertEqual(len(self.Attachment.search([])), 0)
 
                 data = {

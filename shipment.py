@@ -252,6 +252,7 @@ class GenerateShippingLabel(Wizard):
         'shipping.label.start',
         'shipping.select_carrier_view_form',
         [
+            Button('Cancel', 'end', 'tryton-cancel'),
             Button('Continue', 'next', 'tryton-go-next'),
         ]
     )
