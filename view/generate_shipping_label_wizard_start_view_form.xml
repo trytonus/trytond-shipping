@@ -2,4 +2,6 @@
 <form string="Generate Shipment Label" col="2">
     <label name="carrier"/>
     <field name="carrier"/>
+    <label name="override_weight"/>
+    <field name="override_weight"/>
 </form>
