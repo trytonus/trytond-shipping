@@ -57,7 +57,8 @@ class ShipmentOut:
                 'invisible': Or(
                     (~Eval('state').in_(['packed', 'done'])),
                     (Eval('tracking_number') != '')
-                )
+                ),
+                'icon': 'tryton-executable',
             },
         })
         cls._error_messages.update({
@@ -204,6 +205,7 @@ class ShippingCarrierSelector(ModelView):
     carrier = fields.Many2One(
         "carrier", "Carrier", required=True
     )
+    override_weight = fields.Numeric("Override Weight", digits=(16,  2))
     shipment = fields.Many2One(
         'stock.shipment.out', 'Shipment', required=True, readonly=True
     )
@@ -250,6 +252,7 @@ class GenerateShippingLabel(Wizard):
         'shipping.label.start',
         'shipping.select_carrier_view_form',
         [
+            Button('Cancel', 'end', 'tryton-cancel'),
             Button('Continue', 'next', 'tryton-go-next'),
         ]
     )
@@ -305,6 +308,7 @@ class GenerateShippingLabel(Wizard):
         if shipment.carrier:
             values.update({
                 'carrier': shipment.carrier.id,
+                'override_weight': shipment.override_weight,
             })
 
         return values
@@ -356,6 +360,7 @@ class GenerateShippingLabel(Wizard):
         """
         shipment = self.start.shipment
         shipment.carrier = self.start.carrier
+        shipment.override_weight = self.start.override_weight
 
         return shipment
 
