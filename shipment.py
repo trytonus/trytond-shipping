@@ -57,7 +57,8 @@ class ShipmentOut:
                 'invisible': Or(
                     (~Eval('state').in_(['packed', 'done'])),
                     (Eval('tracking_number') != '')
-                )
+                ),
+                'icon': 'tryton-executable',
             },
         })
         cls._error_messages.update({
