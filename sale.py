@@ -83,6 +83,34 @@ class Sale:
         }])
         return log
 
+    def add_shipping_line(self, shipment_cost, description):
+        """
+        This method takes shipping_cost and description as arguments and writes
+        a shipping line. It deletes any previous shipping lines which have
+        a shipment_cost.
+        :param shipment_cost: The shipment cost calculated according to carrier
+        :param description: Shipping line description
+        """
+        self.__class__.write([self], {
+            'lines': [
+                ('create', [{
+                    'type': 'line',
+                    'product': self.carrier.carrier_product.id,
+                    'description': description,
+                    'quantity': 1,  # XXX
+                    'unit': self.carrier.carrier_product.sale_uom.id,
+                    'unit_price': shipment_cost,
+                    'shipment_cost': shipment_cost,
+                    'amount': shipment_cost,
+                    'taxes': [],
+                    'sequence': 9999,  # XXX
+                }]),
+                ('delete', [
+                    line for line in self.lines if line.shipment_cost
+                ]),
+            ]
+        })
+
 
 class SaleLine:
     'Sale Line'

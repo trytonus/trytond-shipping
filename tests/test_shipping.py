@@ -671,6 +671,41 @@ class TestShipping(unittest.TestCase):
             # One shipment works.
             self.Shipment.label_wizard([shipment1])
 
+    def test_0040_add_shipping_line(self):
+        """
+        Tests the add_shipping_line() method.
+        """
+        with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.setup_defaults()
+
+            # Create sale order
+            with Transaction().set_context(company=self.company.id):
+                sale, = self.Sale.create([{
+                    'reference': 'S-1001',
+                    'payment_term': self.payment_term.id,
+                    'party': self.sale_party.id,
+                    'invoice_address': self.sale_party.addresses[0].id,
+                    'shipment_address': self.sale_party.addresses[0].id,
+                    'carrier': self.carrier,
+                }])
+                product = self.create_product(3, self.uom_kg)
+                sale_line, = self.SaleLine.create([{
+                    'sale': sale.id,
+                    'type': 'line',
+                    'quantity': 1,
+                    'product': product,
+                    'unit_price': Decimal('10.00'),
+                    'description': 'Test Description1',
+                    'unit': product.template.default_uom,
+                }])
+
+            with Transaction().set_context(sale._get_carrier_context()):
+                sale.add_shipping_line(
+                    sale.carrier.get_sale_price()[0],
+                    sale.carrier.party.name
+                )
+            self.assertEqual(len(sale.lines), 2)
+
 
 def suite():
     """
