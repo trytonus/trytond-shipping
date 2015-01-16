@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<form string="Address Validation Form" col="6">
+    <label name="current_name"/>
+    <field name="current_name" colspan="4"/>
+    <newline/>
+    <label name="current_street"/>
+    <field name="current_street"/>
+    <label name="street"/>
+    <field name="street"/>
+    <newline/>
+    <label name="current_zip"/>
+    <field name="current_zip"/>
+    <label name="zip"/>
+    <field name="zip"/>
+    <newline/>
+    <label name="current_city"/>
+    <field name="current_city"/>
+    <label name="city"/>
+    <field name="city"/>
+    <newline/>
+    <label name="current_country"/>
+    <field name="current_country"/>
+    <label name="country"/>
+    <field name="country"/>
+    <newline/>
+    <label name="current_subdivision"/>
+    <field name="current_subdivision"/>
+    <label name="subdivision"/>
+    <field name="subdivision"/>
+</form>
