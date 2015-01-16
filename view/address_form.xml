@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<data>
+    <xpath expr="/form/field[@name='subdivision']" position="after">
+        <newline/>
+        <button name="validate_address_button" string="Validate Address" colspan="2"/>
+    </xpath>
+</data>

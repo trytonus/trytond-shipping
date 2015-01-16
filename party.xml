@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<tryton>
+    <data>
+    	<record model="ir.ui.view" id="address_view_form">
+            <field name="model">party.address</field>
+            <field name="inherit" ref="party.address_view_form"/>
+            <field name="name">address_form</field>
+        </record>
+
+        <record model="ir.action.wizard" id="wizard_address_validation">
+            <field name="name">Address Validation</field>
+            <field name="wiz_name">party.address.validation</field>
+            <field name="model">party.address</field>
+        </record>
+
+        <record model="ir.ui.view" id="address_suggestion_view_form">
+            <field name="model">party.address.validation.start</field>
+            <field name="type">form</field>
+            <field name="name">address_suggestion_form</field>
+        </record>
+
+        <record model="ir.ui.view" id="address_validation_end_view_form">
+            <field name="model">party.address.validation.end</field>
+            <field name="type">form</field>
+            <field name="name">address_validation_end_form</field>
+        </record>
+
+    </data>
+</tryton>
