@@ -2,18 +2,39 @@
 """
     party.py
 
-    :copyright: (c) 2014 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2014-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 from trytond.pool import PoolMeta, Pool
+from trytond.transaction import Transaction
+from trytond.pyson import Eval, Bool
+from trytond.model import ModelView, fields
+from trytond.wizard import Wizard, StateView, StateTransition, Button
 
-__all__ = ['Address']
+__all__ = [
+    'Address', 'AddressValidationMsg', 'AddressValidationWizard',
+    'AddressValidationSuggestionView'
+]
 __metaclass__ = PoolMeta
 
 
 class Address:
     "Party"
     __name__ = 'party.address'
+
+    @classmethod
+    def __setup__(cls):
+        super(Address, cls).__setup__()
+        cls._buttons.update({
+            'validate_address_button': {
+                'readonly': ~Bool(Eval('active')),
+            },
+        })
+
+    @classmethod
+    @ModelView.button_action('shipping.wizard_address_validation')
+    def validate_address_button(cls, addresses):
+        pass  # pragma: no cover
 
     def validate_address(self, provider=None):
         """
@@ -93,4 +114,179 @@ class Address:
                 "Validation method is not selected in carrier configuration."
             )
 
-        return getattr(self, '_{0}_address_validate'.format(provider))()
+        return getattr(
+            self, '_{0}_address_validate'.format(provider)
+        )()  # pragma: no cover
+
+    def serialize(self, purpose=None):
+        """
+        Serialize address record.
+        """
+        if purpose == 'validation':
+            return {
+                'name': self.name or None,
+                'street': self.street or None,
+                'zip': self.zip or None,
+                'city': self.city or None,
+                'country': self.country and self.country.id or None,
+                'subdivision': self.subdivision and self.subdivision.id or None,
+            }
+        elif hasattr(super(Address, self), 'serialize'):  # pragma: no cover
+            return super(Address, self).serialize(purpose=purpose)
+
+
+class AddressValidationSuggestionView(ModelView):
+    """
+    Address Validation Wizard Suggestion View
+    """
+    __name__ = 'party.address.validation.start'
+
+    # Older Values
+    current_name = fields.Char('Current Name', readonly=True)
+    current_street = fields.Char('Current Street', readonly=True)
+    current_zip = fields.Char('Current Zip', readonly=True)
+    current_city = fields.Char('Current City', readonly=True)
+    current_country = fields.Many2One(
+        'country.country', 'Current Country', readonly=True
+    )
+    current_subdivision = fields.Many2One(
+        "country.subdivision", 'Current Subdivision', readonly=True
+    )
+
+    # Editable suggestions
+    street = fields.Char('Suggested Street')
+    zip = fields.Char('Suggested Zip')
+    city = fields.Char('Suggested City')
+    country = fields.Many2One('country.country', 'Suggested Country')
+    subdivision = fields.Many2One(
+        "country.subdivision", 'Suggested Subdivision',
+        domain=[('country', '=', Eval('country'))],
+        depends=['country']
+    )
+
+
+class AddressValidationMsg(ModelView):
+    'End State for Address Validation'
+    __name__ = 'party.address.validation.end'
+
+    done_msg = fields.Text("Message", readonly=True)
+
+    @staticmethod
+    def default_done_msg():  # pragma: no cover
+        """
+        Returns default message.
+        """
+        return (
+            'Address validation is complete.'
+        )
+
+
+class AddressValidationWizard(Wizard):
+    """
+    Wizard to validate the given address.
+    """
+    __name__ = 'party.address.validation'
+
+    start = StateView(
+        'party.address.validation.start',
+        'shipping.address_suggestion_view_form',
+        [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button(
+                'Save', 'generate',
+                'tryton-ok', default=True
+            )
+        ]
+    )
+    done = StateView(
+        'party.address.validation.end',
+        'shipping.address_validation_end_view_form',
+        [
+            Button('OK', 'end', 'tryton-ok')
+        ]
+    )
+    generate = StateTransition()
+
+    @classmethod
+    def __setup__(cls):
+        super(AddressValidationWizard, cls).__setup__()
+        cls._error_messages.update({
+            'incomplete_address': (
+                'Please fill out the address completely before attempting '
+                'validation.'
+            ),
+        })
+
+    def transition_generate(self):  # pragma: no cover
+        """
+        Returns the next state.
+        """
+        return 'done'
+
+    def default_start(self, data):
+        """
+        Fills the values in the ModelView and performs address validation.
+        """
+        Address = Pool().get('party.address')
+
+        old_address = Address(Transaction().context.get('active_id'))
+        self.check_for_address_fields(old_address)
+
+        # First fill in the old values
+        values = {
+            'current_' + str(key): value
+            for key, value in old_address.serialize(purpose='validation')
+            .iteritems()
+        }
+
+        # Now perform the validation
+        try:
+            match_addresses = old_address.validate_address()
+        except:
+            raise
+
+        if match_addresses:
+            # If match_addresses is simply True, update the suggestion fields
+            # with the old address.
+            if not isinstance(match_addresses, list):
+                values.update(old_address.serialize(purpose='validation'))
+            else:
+                # Pick highest ranked suggestion.
+                values.update(
+                    match_addresses[0].serialize(purpose='validation')
+                )
+        return values
+
+    def default_done(self, data):
+        """
+        Validation completion state where values of address are saved.
+        """
+        Address = Pool().get('party.address')
+
+        address = Address(Transaction().context.get('active_id'))
+        Address.write([address], {
+            'name': self.start.current_name,
+            'street': self.start.street,
+            'zip': self.start.zip,
+            'city': self.start.city,
+            'country': self.start.country.id,
+            'subdivision': self.start.subdivision.id,
+        })
+        return {
+            'done_msg': (
+                'Address validation is now complete. '
+                'The full address is as follows -: \n%s'
+                % address.full_address
+            ),
+        }
+
+    def check_for_address_fields(self, address):
+        """
+        This method checks that the address is complete before allowing any
+        validation.
+
+        :param address: Active record to be checked against
+        """
+        for key, value in address.serialize(purpose='validation').iteritems():
+            if value is None:
+                self.raise_user_error('incomplete_address')
