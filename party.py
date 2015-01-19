@@ -187,13 +187,17 @@ class AddressValidationWizard(Wizard):
     """
     __name__ = 'party.address.validation'
 
+    start_state = 'init'
+    end_state = 'end'
+
+    init = StateTransition()
     start = StateView(
         'party.address.validation.start',
         'shipping.address_suggestion_view_form',
         [
             Button('Cancel', 'end', 'tryton-cancel'),
             Button(
-                'Save', 'generate',
+                'Save', 'update',
                 'tryton-ok', default=True
             )
         ]
@@ -205,7 +209,7 @@ class AddressValidationWizard(Wizard):
             Button('OK', 'end', 'tryton-ok')
         ]
     )
-    generate = StateTransition()
+    update = StateTransition()
 
     @classmethod
     def __setup__(cls):
@@ -217,20 +221,42 @@ class AddressValidationWizard(Wizard):
             ),
         })
 
-    def transition_generate(self):  # pragma: no cover
+    def transition_init(self):
         """
-        Returns the next state.
+        Initial transition where address validation is performed.
         """
-        return 'done'
+        Address = Pool().get('party.address')
+
+        address = Address(Transaction().context.get('active_id'))
+        self.check_for_address_fields(address)
+
+        # Now perform the validation
+        try:
+            match_addresses = address.validate_address()
+        except:
+            raise
+
+        if match_addresses is True:  # pragma: no cover
+            # If match_addresses is simply True, return 'done' state.
+            return 'done'
+
+        if isinstance(match_addresses, list):  # pragma: no cover
+            # Pick highest ranked suggestion.
+            # Save fields in self.start.
+            self.start.street = match_addresses[0].street
+            self.start.zip = match_addresses[0].zip
+            self.start.city = match_addresses[0].city
+            self.start.country = match_addresses[0].country.id
+            self.start.subdivision = match_addresses[0].subdivision.id
+        return 'start'
 
     def default_start(self, data):
         """
-        Fills the values in the ModelView and performs address validation.
+        Fills the values in the ModelView.
         """
         Address = Pool().get('party.address')
 
         old_address = Address(Transaction().context.get('active_id'))
-        self.check_for_address_fields(old_address)
 
         # First fill in the old values
         values = {
@@ -239,39 +265,42 @@ class AddressValidationWizard(Wizard):
             .iteritems()
         }
 
-        # Now perform the validation
-        try:
-            match_addresses = old_address.validate_address()
-        except:
-            raise
-
-        if match_addresses:
-            # If match_addresses is simply True, update the suggestion fields
-            # with the old address.
-            if not isinstance(match_addresses, list):
-                values.update(old_address.serialize(purpose='validation'))
-            else:
-                # Pick highest ranked suggestion.
-                values.update(
-                    match_addresses[0].serialize(purpose='validation')
-                )
-        return values
-
-    def default_done(self, data):
-        """
-        Validation completion state where values of address are saved.
-        """
-        Address = Pool().get('party.address')
-
-        address = Address(Transaction().context.get('active_id'))
-        Address.write([address], {
-            'name': self.start.current_name,
+        # Update the new values.
+        # The `values` dict needs to contain specifically the newer address
+        # key-value pairs or else the fields become blank.
+        values.update({
             'street': self.start.street,
             'zip': self.start.zip,
             'city': self.start.city,
             'country': self.start.country.id,
             'subdivision': self.start.subdivision.id,
         })
+
+        return values
+
+    def transition_update(self):  # pragma: no cover
+        """
+        Updates the address and returns the next state.
+        """
+        Address = Pool().get('party.address')
+
+        address = Address(Transaction().context.get('active_id'))
+        Address.write([address], {
+            'street': self.start.street,
+            'zip': self.start.zip,
+            'city': self.start.city,
+            'country': self.start.country.id,
+            'subdivision': self.start.subdivision.id,
+        })
+        return 'done'
+
+    def default_done(self, data):
+        """
+        Validation completion state.
+        """
+        Address = Pool().get('party.address')
+
+        address = Address(Transaction().context.get('active_id'))
         return {
             'done_msg': (
                 'Address validation is now complete. '
