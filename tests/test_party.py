@@ -265,7 +265,7 @@ class TestParty(unittest.TestCase):
                 session_id, start_state, end_state = self.AddrValWizard.create()
 
                 with self.assertRaises(UserError) as e:
-                    self.AddrValWizard(session_id).default_start(None)
+                    self.AddrValWizard(session_id).transition_init()
 
                 self.assertIn(
                     'Validation method is not selected', e.exception.message
