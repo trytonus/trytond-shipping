@@ -51,10 +51,6 @@ msgctxt "field:carrier.configuration,rec_name:"
 msgid "Name"
 msgstr "Name Staat"
 
-msgctxt "field:carrier.configuration,save_carrier_logs:"
-msgid "Save Carrier Logs"
-msgstr "Logs speichern"
-
 msgctxt "field:carrier.configuration,write_date:"
 msgid "Write Date"
 msgstr "Zuletzt geändert"
@@ -102,10 +98,6 @@ msgstr "Zuletzt geändert"
 msgctxt "field:carrier.log,write_uid:"
 msgid "Write User"
 msgstr "Letzte Änderung durch"
-
-msgctxt "field:sale.sale,carrier_logs:"
-msgid "Carrier Logs"
-msgstr "Frachtführer Logs"
 
 msgctxt "field:sale.sale,package_weight:"
 msgid "Package weight"
@@ -162,10 +154,6 @@ msgstr "Korrekturgewicht"
 msgctxt "field:shipping.label.start,shipment:"
 msgid "Shipment"
 msgstr "Lieferposten"
-
-msgctxt "field:stock.shipment.out,carrier_logs:"
-msgid "Carrier Logs"
-msgstr "Frachtführer Logs"
 
 msgctxt "field:stock.shipment.out,computed_weight:"
 msgid "Computed Weight"
