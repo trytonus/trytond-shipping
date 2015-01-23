@@ -135,9 +135,6 @@ class TestParty(unittest.TestCase):
             'party': carrier_party,
             'carrier_product': carrier_product,
         }])
-        self.CarrierConf.create([{
-            'save_carrier_logs': True,
-        }])
 
         warehouse_address, = self.Address.create([{
             'party': self.company.party.id,
