@@ -60,7 +60,14 @@ class ShipmentOut:
         })
         cls._error_messages.update({
             'no_shipments': 'There must be atleast one shipment.',
-            'too_many_shipments': 'The wizard can be called on only one shipment'  # noqa
+            'too_many_shipments':
+                'The wizard can be called on only one shipment',
+            'tracking_number_already_present':
+                'Tracking Number is already present for this shipment.',
+            'invalid_state': 'Labels can only be generated when the '
+                'shipment is in Packed or Done states only',
+            'wrong_carrier':
+                'Carrier for selected shipment is not of %s',
         })
 
     @classmethod
