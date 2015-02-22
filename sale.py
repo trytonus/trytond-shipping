@@ -64,6 +64,12 @@ class Sale:
             )
         )
 
+    def _get_ship_from_address(self):
+        """
+        Usually the warehouse from which you ship
+        """
+        return self.warehouse.address
+
     def create_shipment(self, shipment_type):
         """
         Create shipments for sale with sale in context. Sale in transaction

@@ -95,6 +95,12 @@ class ShipmentOut:
 
         return UOM.search([('symbol', '=', 'lb')])[0]
 
+    def _get_ship_from_address(self):
+        """
+        Usually the warehouse from which you ship
+        """
+        return self.warehouse.address
+
     def get_package_weight(self, name):
         """
         Returns package weight if weight is not overriden
