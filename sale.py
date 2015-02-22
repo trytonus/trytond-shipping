@@ -19,6 +19,10 @@ class Sale:
     "Sale"
     __name__ = 'sale.sale'
 
+    is_international_shipping = fields.Function(
+        fields.Boolean("Is International Shipping"),
+        'on_change_with_is_international_shipping'
+    )
     package_weight = fields.Function(
         fields.Numeric("Package weight", digits=(16,  2)),
         'get_package_weight'
@@ -53,6 +57,19 @@ class Sale:
         weight_uom = self._get_weight_uom()
         return self._get_package_weight(weight_uom)
 
+    @fields.depends('shipment_address', 'warehouse')
+    def on_change_with_is_international_shipping(self, name=None):
+        """
+        Return True if international shipping
+        """
+        from_address = self._get_ship_from_address()
+
+        if self.shipment_address and from_address and \
+           from_address.country and self.shipment_address.country and \
+           from_address.country != self.shipment_address.country:
+            return True
+        return False
+
     def _get_package_weight(self, uom):
         """
         Returns sum of weight associated with package
@@ -68,7 +85,7 @@ class Sale:
         """
         Usually the warehouse from which you ship
         """
-        return self.warehouse.address
+        return self.warehouse and self.warehouse.address
 
     def create_shipment(self, shipment_type):
         """
