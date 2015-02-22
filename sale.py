@@ -9,6 +9,7 @@ from decimal import Decimal
 
 from trytond.model import fields
 from trytond.pool import PoolMeta, Pool
+from trytond.transaction import Transaction
 
 __all__ = ['SaleLine', 'Sale']
 __metaclass__ = PoolMeta
@@ -62,6 +63,14 @@ class Sale:
                 self.lines
             )
         )
+
+    def create_shipment(self, shipment_type):
+        """
+        Create shipments for sale with sale in context. Sale in transaction
+        can be used to get defaults from sale while creating shipment
+        """
+        with Transaction().set_context(sale=self.id):
+            return super(Sale, self).create_shipment(shipment_type)
 
     def add_shipping_line(self, shipment_cost, description):
         """
