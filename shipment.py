@@ -30,9 +30,6 @@ class ShipmentOut:
 
     tracking_number = fields.Char('Tracking Number', states=STATES)
 
-    carrier_logs = fields.One2Many(
-        'carrier.log', 'shipment_out', 'Carrier Logs', readonly=True
-    )
     package_weight = fields.Function(
         fields.Numeric("Package weight", digits=(16,  2)),
         'get_package_weight'
@@ -63,7 +60,14 @@ class ShipmentOut:
         })
         cls._error_messages.update({
             'no_shipments': 'There must be atleast one shipment.',
-            'too_many_shipments': 'The wizard can be called on only one shipment'  # noqa
+            'too_many_shipments':
+                'The wizard can be called on only one shipment',
+            'tracking_number_already_present':
+                'Tracking Number is already present for this shipment.',
+            'invalid_state': 'Labels can only be generated when the '
+                'shipment is in Packed or Done states only',
+            'wrong_carrier':
+                'Carrier for selected shipment is not of %s',
         })
 
     @classmethod
@@ -109,23 +113,6 @@ class ShipmentOut:
                 self.outgoing_moves
             )
         )
-
-    def add_carrier_log(self, log_data, carrier):
-        """
-        Save log for shipment out
-        """
-        CarrierLog = Pool().get('carrier.log')
-        Config = Pool().get('carrier.configuration')
-
-        if not Config(1).save_carrier_logs:
-            return
-
-        log, = CarrierLog.create([{
-            'shipment_out': self.id,
-            'carrier': carrier,
-            'log': log_data,
-        }])
-        return log
 
     def allow_label_generation(self):
         """

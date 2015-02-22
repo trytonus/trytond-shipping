@@ -9,6 +9,7 @@ from decimal import Decimal
 
 from trytond.model import fields
 from trytond.pool import PoolMeta, Pool
+from trytond.transaction import Transaction
 
 __all__ = ['SaleLine', 'Sale']
 __metaclass__ = PoolMeta
@@ -18,9 +19,6 @@ class Sale:
     "Sale"
     __name__ = 'sale.sale'
 
-    carrier_logs = fields.One2Many(
-        'carrier.log', 'sale', 'Carrier Logs', readonly=True
-    )
     package_weight = fields.Function(
         fields.Numeric("Package weight", digits=(16,  2)),
         'get_package_weight'
@@ -66,22 +64,13 @@ class Sale:
             )
         )
 
-    def add_carrier_log(self, log_data, carrier):
+    def create_shipment(self, shipment_type):
         """
-        Save log for sale
+        Create shipments for sale with sale in context. Sale in transaction
+        can be used to get defaults from sale while creating shipment
         """
-        CarrierLog = Pool().get('carrier.log')
-        Config = Pool().get('carrier.configuration')
-
-        if not Config(1).save_carrier_logs:
-            return
-
-        log, = CarrierLog.create([{
-            'sale': self.id,
-            'carrier': carrier,
-            'log': log_data,
-        }])
-        return log
+        with Transaction().set_context(sale=self.id):
+            return super(Sale, self).create_shipment(shipment_type)
 
     def add_shipping_line(self, shipment_cost, description):
         """

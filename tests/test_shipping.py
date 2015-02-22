@@ -7,11 +7,6 @@
 """
 import sys
 import os
-DIR = os.path.abspath(os.path.normpath(os.path.join(
-    __file__, '..', '..', '..', '..', '..', 'trytond'
-)))
-if os.path.isdir(DIR):
-    sys.path.insert(0, os.path.dirname(DIR))
 import unittest
 from datetime import date
 from decimal import Decimal
@@ -20,6 +15,12 @@ import trytond.tests.test_tryton
 from trytond.tests.test_tryton import POOL, DB_NAME, USER, CONTEXT
 from trytond.transaction import Transaction
 from trytond.exceptions import UserError
+
+DIR = os.path.abspath(os.path.normpath(os.path.join(
+    __file__, '..', '..', '..', '..', '..', 'trytond'
+)))
+if os.path.isdir(DIR):
+    sys.path.insert(0, os.path.dirname(DIR))
 
 
 class TestShipping(unittest.TestCase):
@@ -135,9 +136,6 @@ class TestShipping(unittest.TestCase):
         self.carrier, = self.Carrier.create([{
             'party': carrier_party,
             'carrier_product': carrier_product,
-        }])
-        self.CarrierConf.create([{
-            'save_carrier_logs': True
         }])
 
         warehouse_address, = self.Address.create([{
@@ -481,52 +479,6 @@ class TestShipping(unittest.TestCase):
                 # Since overridden weight is there, package weight will be
                 # overridden weight
                 self.assertEqual(shipment.package_weight, Decimal('20'))
-
-    def test_0015_sale_shipment_carrier_log(self):
-        '''
-        Test sale and shipment carrier log
-        '''
-        with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            self.setup_defaults()
-
-            # Create sale order
-            with Transaction().set_context(company=self.company.id):
-                sale, = self.Sale.create([{
-                    'reference': 'S-1001',
-                    'payment_term': self.payment_term.id,
-                    'party': self.sale_party.id,
-                    'invoice_address': self.sale_party.addresses[0].id,
-                    'shipment_address': self.sale_party.addresses[0].id,
-                    'carrier': self.carrier,
-                }])
-
-                # Sale line with uom same as product uom
-                product = self.create_product(3, self.uom_kg)
-                sale_line6, = self.SaleLine.create([{
-                    'sale': sale.id,
-                    'type': 'line',
-                    'quantity': 1,
-                    'product': product,
-                    'unit_price': Decimal('10.00'),
-                    'description': 'Test Description1',
-                    'unit': product.template.default_uom,
-                }])
-
-                sale.add_carrier_log("-- Log Data --", self.carrier)
-                self.assertEqual(len(sale.carrier_logs), 1)
-                self.assertEqual(sale.carrier_logs[0].log, "-- Log Data --")
-
-                self.Sale.quote([sale])
-                self.Sale.confirm([sale])
-                self.Sale.process([sale])
-
-                self.assertEqual(len(sale.shipments), 1)
-
-                shipment, = sale.shipments
-
-                shipment.add_carrier_log("-- Log Data --", self.carrier)
-                self.assertEqual(len(shipment.carrier_logs), 1)
-                self.assertEqual(shipment.carrier_logs[0].log, "-- Log Data --")
 
     def test_0020_wizard_create(self):
         """

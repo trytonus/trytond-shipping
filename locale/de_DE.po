@@ -1,0 +1,252 @@
+# 
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgctxt "error:sale.line:"
+msgid "Weight is missing on the product %s"
+msgstr "Gewicht fehlt für Artikel %s"
+
+msgctxt "error:shipping.label:"
+msgid ""
+"Labels can only be generated when the shipment is in Packed or Done states "
+"only"
+msgstr ""
+"Etiketten können nur für Lieferposten mit Status 'Gepackt' oder 'Erledigt' "
+"erstellt werden"
+
+msgctxt "error:shipping.label:"
+msgid "Tracking Number is already present for this shipment."
+msgstr "Trackingnummer bereits vorhanden für diesen Lieferposten"
+
+msgctxt "error:stock.move:"
+msgid "Weight for product %s in stock move is missing"
+msgstr "Gewicht fehlt in der Lagerbewegung für Artikel %s"
+
+msgctxt "error:stock.shipment.out:"
+msgid "The wizard can be called on only one shipment"
+msgstr ""
+"Der Assistent kann nur für jeweils einen Lieferposten aufgerufen werden"
+
+msgctxt "error:stock.shipment.out:"
+msgid "There must be atleast one shipment."
+msgstr "Es muss wenigstens einen Lieferposten geben"
+
+msgctxt "field:carrier.configuration,create_date:"
+msgid "Create Date"
+msgstr "Erstellungsdatum"
+
+msgctxt "field:carrier.configuration,create_uid:"
+msgid "Create User"
+msgstr "Erstellt durch"
+
+msgctxt "field:carrier.configuration,default_validation_provider:"
+msgid "Default Validation Provider"
+msgstr "Standardbewertung Provider"
+
+msgctxt "field:carrier.configuration,id:"
+msgid "ID"
+msgstr "ID"
+
+msgctxt "field:carrier.configuration,rec_name:"
+msgid "Name"
+msgstr "Name Staat"
+
+msgctxt "field:carrier.configuration,write_date:"
+msgid "Write Date"
+msgstr "Zuletzt geändert"
+
+msgctxt "field:carrier.configuration,write_uid:"
+msgid "Write User"
+msgstr "Letzte Änderung durch"
+
+msgctxt "field:carrier.log,carrier:"
+msgid "Carrier"
+msgstr "Frachtführer"
+
+msgctxt "field:carrier.log,create_date:"
+msgid "Create Date"
+msgstr "Erstellungsdatum"
+
+msgctxt "field:carrier.log,create_uid:"
+msgid "Create User"
+msgstr "Erstellt durch"
+
+msgctxt "field:carrier.log,id:"
+msgid "ID"
+msgstr "ID"
+
+msgctxt "field:carrier.log,log:"
+msgid "Log"
+msgstr "Log"
+
+msgctxt "field:carrier.log,rec_name:"
+msgid "Name"
+msgstr "Name Staat"
+
+msgctxt "field:carrier.log,sale:"
+msgid "Sale"
+msgstr "Verkauf"
+
+msgctxt "field:carrier.log,shipment_out:"
+msgid "Shipment Out"
+msgstr "Kundenlieferposten"
+
+msgctxt "field:carrier.log,write_date:"
+msgid "Write Date"
+msgstr "Zuletzt geändert"
+
+msgctxt "field:carrier.log,write_uid:"
+msgid "Write User"
+msgstr "Letzte Änderung durch"
+
+msgctxt "field:sale.sale,package_weight:"
+msgid "Package weight"
+msgstr "Paketgewicht"
+
+msgctxt "field:sale.sale,weight_uom:"
+msgid "Weight UOM"
+msgstr "Maßeinheit Gewicht"
+
+msgctxt "field:shipping.label.end,attachments:"
+msgid "Attachments"
+msgstr "Anhänge"
+
+msgctxt "field:shipping.label.end,cost:"
+msgid "Cost"
+msgstr "Kosten"
+
+msgctxt "field:shipping.label.end,cost_currency:"
+msgid "Cost Currency"
+msgstr "Währung Kosten"
+
+msgctxt "field:shipping.label.end,id:"
+msgid "ID"
+msgstr "ID"
+
+msgctxt "field:shipping.label.end,message:"
+msgid "Message"
+msgstr "Nachricht"
+
+msgctxt "field:shipping.label.end,tracking_number:"
+msgid "Tracking number"
+msgstr "Trackingnummer"
+
+msgctxt "field:shipping.label.no_modules,id:"
+msgid "ID"
+msgstr "ID"
+
+msgctxt "field:shipping.label.no_modules,no_module_msg:"
+msgid "Message"
+msgstr "Nachricht"
+
+msgctxt "field:shipping.label.start,carrier:"
+msgid "Carrier"
+msgstr "Frachtführer"
+
+msgctxt "field:shipping.label.start,id:"
+msgid "ID"
+msgstr "ID"
+
+msgctxt "field:shipping.label.start,override_weight:"
+msgid "Override Weight"
+msgstr "Korrekturgewicht"
+
+msgctxt "field:shipping.label.start,shipment:"
+msgid "Shipment"
+msgstr "Lieferposten"
+
+msgctxt "field:stock.shipment.out,computed_weight:"
+msgid "Computed Weight"
+msgstr "Berechnetes Gewicht"
+
+msgctxt "field:stock.shipment.out,override_weight:"
+msgid "Override Weight"
+msgstr "Korrekturgewicht"
+
+msgctxt "field:stock.shipment.out,package_weight:"
+msgid "Package weight"
+msgstr "Paketgewicht"
+
+msgctxt "field:stock.shipment.out,tracking_number:"
+msgid "Tracking Number"
+msgstr "Trackingnummer"
+
+msgctxt "field:stock.shipment.out,weight_uom:"
+msgid "Weight UOM"
+msgstr "Maßeinheit Gewicht"
+
+msgctxt "model:carrier.configuration,name:"
+msgid "Carrier Configuration"
+msgstr "Frachtführer Einstellungen"
+
+msgctxt "model:carrier.log,name:"
+msgid "Carrier Log"
+msgstr "Frachtführer Log"
+
+msgctxt "model:ir.action,name:act_carrier_configuration_form"
+msgid "Configuration"
+msgstr "Einstellungen"
+
+msgctxt "model:ir.action,name:wizard_generate_shipping_label"
+msgid "Generate Shipment Label"
+msgstr "Versandetikett erstellen"
+
+msgctxt "model:ir.ui.menu,name:menu_carrier_configuration"
+msgid "Configuration"
+msgstr "Einstellungen"
+
+msgctxt "model:ir.ui.menu,name:menu_configuration"
+msgid "Configuration"
+msgstr "Einstellungen"
+
+msgctxt "model:shipping.label.end,name:"
+msgid "Generate UPS Labels Message"
+msgstr "Nachricht für UPS-Etikett erstellen"
+
+msgctxt "model:shipping.label.no_modules,name:"
+msgid "Wizard State for No Modules"
+msgstr "Assistent Ohne Modul"
+
+msgctxt "model:shipping.label.start,name:"
+msgid "View To Select Carrier"
+msgstr "Frachtführer Auswahl"
+
+msgctxt "view:carrier.configuration:"
+msgid "Carrier Configuration"
+msgstr "Frachtführer Einstellungen"
+
+msgctxt "view:sale.sale:"
+msgid "Carrier Details"
+msgstr "Frachtführer Details"
+
+msgctxt "view:shipping.label.end:"
+msgid "Shipment Label Generated"
+msgstr "Versandetikett erstellt"
+
+msgctxt "view:shipping.label.no_modules:"
+msgid "No Shipping Module Found"
+msgstr "Kein Versandmodul gefunden"
+
+msgctxt "view:shipping.label.start:"
+msgid "Generate Shipment Label"
+msgstr "Versandetikett erstellen"
+
+msgctxt "view:stock.shipment.out:"
+msgid "Carrier Details"
+msgstr "Frachtführer Details"
+
+msgctxt "view:stock.shipment.out:"
+msgid "Generate shipping label"
+msgstr "Versandetikett erstellen"
+
+msgctxt "wizard_button:shipping.label,generate,end:"
+msgid "Ok"
+msgstr "OK"
+
+msgctxt "wizard_button:shipping.label,no_modules,end:"
+msgid "Ok"
+msgstr "OK"
+
+msgctxt "wizard_button:shipping.label,start,next:"
+msgid "Continue"
+msgstr "Weiter"
