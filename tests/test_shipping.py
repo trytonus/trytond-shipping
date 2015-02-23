@@ -518,6 +518,7 @@ class TestShipping(unittest.TestCase):
                     'shipment_address': self.sale_party.addresses[0].id,
                     'carrier': self.carrier,
                 }])
+                self.assertFalse(sale.is_international_shipping)
 
                 # Sale line with uom same as product uom
                 product = self.create_product(3, self.uom_kg)
@@ -538,6 +539,8 @@ class TestShipping(unittest.TestCase):
                 self.assertEqual(len(sale.shipments), 1)
 
                 self.Shipment.assign(sale.shipments)
+
+                self.assertFalse(sale.shipments[0].is_international_shipping)
 
             with Transaction().set_context(
                     active_id=sale.shipments[0], company=self.company.id
