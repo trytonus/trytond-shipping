@@ -30,6 +30,11 @@ class ShipmentOut:
 
     tracking_number = fields.Char('Tracking Number', states=STATES)
 
+    is_international_shipping = fields.Function(
+        fields.Boolean("Is International Shipping"),
+        'on_change_with_is_international_shipping'
+    )
+
     package_weight = fields.Function(
         fields.Numeric("Package weight", digits=(16,  2)),
         'get_package_weight'
@@ -84,6 +89,19 @@ class ShipmentOut:
         """
         return self._get_weight_uom().id
 
+    @fields.depends('delivery_address', 'warehouse')
+    def on_change_with_is_international_shipping(self, name=None):
+        """
+        Return True if international shipping
+        """
+        from_address = self._get_ship_from_address()
+
+        if self.delivery_address and from_address and \
+           from_address.country and self.delivery_address.country and \
+           from_address.country != self.delivery_address.country:
+            return True
+        return False
+
     def _get_weight_uom(self):
         """
         Returns Pound as default value for uom
@@ -94,6 +112,12 @@ class ShipmentOut:
         UOM = Pool().get('product.uom')
 
         return UOM.search([('symbol', '=', 'lb')])[0]
+
+    def _get_ship_from_address(self):
+        """
+        Usually the warehouse from which you ship
+        """
+        return self.warehouse and self.warehouse.address
 
     def get_package_weight(self, name):
         """
