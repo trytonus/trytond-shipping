@@ -2,7 +2,7 @@
 """
     shipment.py
 
-    :copyright: (c) 2014 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2014-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 from decimal import Decimal
@@ -74,6 +74,14 @@ class ShipmentOut:
             'wrong_carrier':
                 'Carrier for selected shipment is not of %s',
         })
+
+    @classmethod
+    def copy(cls, shipments, default=None):
+        if default is None:
+            default = {}
+        default = default.copy()
+        default['tracking_number'] = None
+        return super(ShipmentOut, cls).copy(shipments, default=default)
 
     @classmethod
     @ModelView.button_action('shipping.wizard_generate_shipping_label')
