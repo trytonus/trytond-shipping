@@ -56,12 +56,13 @@ class Sale:
         """
         Returns sum of weight associated with package
         """
-        return sum(
+        weight = sum(
             map(
                 lambda line: line.get_weight(uom, silent=True),
                 self.lines
             )
         )
+        return weight.quantize(Decimal('0.01'))  # Quantize to 2 decimal place
 
     def add_shipping_line(self, shipment_cost, description):
         """
