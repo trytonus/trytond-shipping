@@ -7,11 +7,6 @@
 """
 import sys
 import os
-DIR = os.path.abspath(os.path.normpath(os.path.join(
-    __file__, '..', '..', '..', '..', '..', 'trytond'
-)))
-if os.path.isdir(DIR):
-    sys.path.insert(0, os.path.dirname(DIR))
 import unittest
 from decimal import Decimal
 
@@ -19,6 +14,11 @@ import trytond.tests.test_tryton
 from trytond.tests.test_tryton import POOL, DB_NAME, USER, CONTEXT
 from trytond.transaction import Transaction
 from trytond.exceptions import UserError
+DIR = os.path.abspath(os.path.normpath(os.path.join(
+    __file__, '..', '..', '..', '..', '..', 'trytond'
+)))
+if os.path.isdir(DIR):
+    sys.path.insert(0, os.path.dirname(DIR))
 
 
 class TestParty(unittest.TestCase):
