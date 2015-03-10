@@ -100,12 +100,13 @@ class ShipmentOut:
         Returns sum of weight associated with each move line
         """
         weight_uom = self._get_weight_uom()
-        return sum(
+        weight = sum(
             map(
                 lambda move: move.get_weight(weight_uom, silent=True),
                 self.outgoing_moves
             )
         )
+        return weight.quantize(Decimal('0.01'))  # Quantize to 2 decimal place
 
     def allow_label_generation(self):
         """
