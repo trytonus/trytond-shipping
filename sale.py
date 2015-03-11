@@ -62,7 +62,8 @@ class Sale:
                 self.lines
             )
         )
-        return weight.quantize(Decimal('0.01'))  # Quantize to 2 decimal place
+        # Quantize to 2 decimal place
+        return Decimal(weight).quantize(Decimal('0.01'))
 
     def add_shipping_line(self, shipment_cost, description):
         """

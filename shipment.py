@@ -106,7 +106,8 @@ class ShipmentOut:
                 self.outgoing_moves
             )
         )
-        return weight.quantize(Decimal('0.01'))  # Quantize to 2 decimal place
+        # Quantize to 2 decimal place
+        return Decimal(weight).quantize(Decimal('0.01'))
 
     def allow_label_generation(self):
         """
