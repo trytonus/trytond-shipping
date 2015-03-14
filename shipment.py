@@ -285,12 +285,12 @@ class GenerateShippingLabel(Wizard):
         if shipment.allow_label_generation():
             values = {
                 'shipment': shipment.id,
+                'override_weight': shipment.override_weight,
             }
 
         if shipment.carrier:
             values.update({
                 'carrier': shipment.carrier.id,
-                'override_weight': shipment.override_weight,
             })
 
         return values
