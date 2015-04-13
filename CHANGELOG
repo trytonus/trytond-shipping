@@ -1,0 +1,12 @@
+Changelog
+=========
+
+New dependent modules:
+
+* stock_package
+
+Changes:
+
+* Shifted weight function fields from ShipmentOut to Package model - aa84294
+* Refactored label generation wizard to remove tracking_number and override_weight - aa84294
+* Add dependency for stock_package module - b136592

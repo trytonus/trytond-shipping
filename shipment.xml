@@ -38,6 +38,12 @@
             <field name="name">shipment_out_form</field>
         </record>
 
+        <record model="ir.ui.view" id="package_view_form">
+            <field name="model">stock.package</field>
+            <field name="inherit" ref="stock_package.package_view_form"/>
+            <field name="name">package_form</field>
+        </record>
+
        <record model="ir.ui.view" id="no_module_view_form">
             <field name="model">shipping.label.no_modules</field>
             <field name="type">form</field>
