@@ -56,7 +56,7 @@ class Sale:
         weight_uom = self._get_weight_uom()
         return self._get_package_weight(weight_uom)
 
-    @fields.depends('shipment_address', 'warehouse')
+    @fields.depends('party', 'shipment_address', 'warehouse')
     def on_change_with_is_international_shipping(self, name=None):
         """
         Return True if international shipping
