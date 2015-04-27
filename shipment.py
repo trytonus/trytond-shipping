@@ -16,7 +16,8 @@ from trytond.transaction import Transaction
 __metaclass__ = PoolMeta
 __all__ = [
     'ShipmentOut', 'StockMove', 'GenerateShippingLabelMessage',
-    'GenerateShippingLabel', 'ShippingCarrierSelector', 'ShippingLabelNoModules'
+    'GenerateShippingLabel', 'ShippingCarrierSelector',
+    'ShippingLabelNoModules', 'Package'
 ]
 
 STATES = {
@@ -24,16 +25,10 @@ STATES = {
 }
 
 
-class ShipmentOut:
-    "Shipment Out"
-    __name__ = 'stock.shipment.out'
+class Package:
+    __name__ = 'stock.package'
 
-    tracking_number = fields.Char('Tracking Number', states=STATES)
-
-    is_international_shipping = fields.Function(
-        fields.Boolean("Is International Shipping"),
-        'on_change_with_is_international_shipping'
-    )
+    tracking_number = fields.Char('Tracking Number', readonly=True)
 
     package_weight = fields.Function(
         fields.Numeric("Package weight", digits=(16,  2)),
@@ -52,6 +47,46 @@ class ShipmentOut:
 
     override_weight = fields.Numeric("Override Weight", digits=(16,  2))
 
+    def get_weight_uom(self, name):
+        """
+        Returns weight uom for the package from shipment
+        """
+        return self.shipment.weight_uom.id
+
+    def get_package_weight(self, name):
+        """
+        Returns package weight if weight is not overriden
+        otherwise returns overriden weight
+        """
+        return self.override_weight or self.get_computed_weight()
+
+    def get_computed_weight(self, name=None):
+        """
+        Returns sum of weight associated with each move line
+        """
+        weight = Decimal(sum(
+            map(
+                lambda move: move.get_weight(self.weight_uom, silent=True),
+                self.moves
+            )
+        ))
+        return weight.quantize(Decimal('0.01'))  # Quantize to 2 decimal place
+
+
+class ShipmentOut:
+    "Shipment Out"
+    __name__ = 'stock.shipment.out'
+
+    is_international_shipping = fields.Function(
+        fields.Boolean("Is International Shipping"),
+        'on_change_with_is_international_shipping'
+    )
+
+    weight_uom = fields.Function(
+        fields.Many2One('product.uom', 'Weight UOM'),
+        'get_weight_uom'
+    )
+
     @classmethod
     def __setup__(cls):
         cls._buttons.update({
@@ -67,21 +102,11 @@ class ShipmentOut:
             'no_shipments': 'There must be atleast one shipment.',
             'too_many_shipments':
                 'The wizard can be called on only one shipment',
-            'tracking_number_already_present':
-                'Tracking Number is already present for this shipment.',
             'invalid_state': 'Labels can only be generated when the '
                 'shipment is in Packed or Done states only',
             'wrong_carrier':
                 'Carrier for selected shipment is not of %s',
         })
-
-    @classmethod
-    def copy(cls, shipments, default=None):
-        if default is None:
-            default = {}
-        default = default.copy()
-        default['tracking_number'] = None
-        return super(ShipmentOut, cls).copy(shipments, default=default)
 
     @classmethod
     @ModelView.button_action('shipping.wizard_generate_shipping_label')
@@ -90,12 +115,6 @@ class ShipmentOut:
             cls.raise_user_error('no_shipments')
         elif len(shipments) > 1:
             cls.raise_user_error('too_many_shipments')
-
-    def get_weight_uom(self, name):
-        """
-        Returns weight uom for the package
-        """
-        return self._get_weight_uom().id
 
     @fields.depends('delivery_address', 'warehouse')
     def on_change_with_is_international_shipping(self, name=None):
@@ -109,6 +128,12 @@ class ShipmentOut:
            from_address.country != self.delivery_address.country:
             return True
         return False
+
+    def get_weight_uom(self, name):
+        """
+        Returns weight uom for the package
+        """
+        return self._get_weight_uom().id
 
     def _get_weight_uom(self):
         """
@@ -127,26 +152,6 @@ class ShipmentOut:
         """
         return self.warehouse and self.warehouse.address
 
-    def get_package_weight(self, name):
-        """
-        Returns package weight if weight is not overriden
-        otherwise returns overriden weight
-        """
-        return self.override_weight or self.get_computed_weight()
-
-    def get_computed_weight(self, name=None):
-        """
-        Returns sum of weight associated with each move line
-        """
-        weight_uom = self._get_weight_uom()
-        weight = Decimal(sum(
-            map(
-                lambda move: move.get_weight(weight_uom, silent=True),
-                self.outgoing_moves
-            )
-        ))
-        return weight.quantize(Decimal('0.01'))  # Quantize to 2 decimal place
-
     def allow_label_generation(self):
         """
         Shipment must be in the right states and tracking number must not
@@ -154,9 +159,6 @@ class ShipmentOut:
         """
         if self.state not in ('packed', 'done'):
             self.raise_user_error('invalid_state')
-
-        if self.tracking_number:
-            self.raise_user_error('tracking_number_already_present')
 
         return True
 
@@ -225,7 +227,6 @@ class ShippingCarrierSelector(ModelView):
     carrier = fields.Many2One(
         "carrier", "Carrier", required=True
     )
-    override_weight = fields.Numeric("Override Weight", digits=(16,  2))
     shipment = fields.Many2One(
         'stock.shipment.out', 'Shipment', required=True, readonly=True
     )
@@ -235,7 +236,6 @@ class GenerateShippingLabelMessage(ModelView):
     'Generate UPS Labels Message'
     __name__ = 'shipping.label.end'
 
-    tracking_number = fields.Char("Tracking number", readonly=True)
     message = fields.Text("Message", readonly=True)
     attachments = fields.One2Many(
         'ir.attachment', None,
@@ -298,10 +298,11 @@ class GenerateShippingLabel(Wizard):
     def __setup__(cls):
         super(GenerateShippingLabel, cls).__setup__()
         cls._error_messages.update({
-            'tracking_number_already_present':
-                'Tracking Number is already present for this shipment.',
-            'invalid_state': 'Labels can only be generated when the '
-                'shipment is in Packed or Done states only',
+            'invalid_state': (
+                'Labels can only be generated when the shipment is in Packed or'
+                ' Done states only'
+            ),
+            'no_packages': 'Shipment %s has no packages',
         })
 
     def _get_message(self):  # pragma: no cover
@@ -319,11 +320,11 @@ class GenerateShippingLabel(Wizard):
         Shipment = Pool().get('stock.shipment.out')
 
         shipment = Shipment(Transaction().context.get('active_id'))
+        self.validate_shipment_packages(shipment)
 
         if shipment.allow_label_generation():
             values = {
                 'shipment': shipment.id,
-                'override_weight': shipment.override_weight,
             }
 
         if shipment.carrier:
@@ -337,16 +338,16 @@ class GenerateShippingLabel(Wizard):
         Shipment = Pool().get('stock.shipment.out')
 
         self.start.shipment = Shipment(Transaction().context.get('active_id'))
+
         return 'no_modules'
 
     def default_generate(self, data):
         shipment = self.update_shipment()
         shipment.save()
 
-        tracking_number = self.generate_label(shipment)
+        self.generate_label(shipment)
 
         values = {
-            'tracking_number': tracking_number,
             'message': self._get_message(),
             'attachments': self.get_attachments(),
             'cost': shipment.cost,
@@ -380,7 +381,6 @@ class GenerateShippingLabel(Wizard):
         """
         shipment = self.start.shipment
         shipment.carrier = self.start.carrier
-        shipment.override_weight = self.start.override_weight
 
         return shipment
 
@@ -398,3 +398,12 @@ class GenerateShippingLabel(Wizard):
             )
 
         return getattr(shipment, method_name)()
+
+    def validate_shipment_packages(self, shipment):
+        """
+        Validate that the shipment has packages
+
+        :param shipment: Active record of shipment
+        """
+        if not shipment.packages:
+            self.raise_user_error("no_packages", error_args=(shipment.id,))
