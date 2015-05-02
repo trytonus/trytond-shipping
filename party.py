@@ -36,7 +36,7 @@ class Address:
     def validate_address_button(cls, addresses):
         pass  # pragma: no cover
 
-    def validate_address(self, provider=None):
+    def validate_address(self, carrier=None):
         """
         This method provides a generic address validation API that delegates
         actual calls to external services (or perhaps even database lookups)
@@ -106,16 +106,16 @@ class Address:
         CarrierConfig = Pool().get('carrier.configuration')
 
         config = CarrierConfig(1)
-        provider = provider or config.default_validation_provider
+        carrier = carrier or config.default_validation_carrier
 
-        if not provider:
+        if not carrier:
             # TODO: Make this translatable error message
             self.raise_user_error(
-                "Validation method is not selected in carrier configuration."
+                "Validation Carrier is not selected in carrier configuration."
             )
 
         return getattr(
-            self, '_{0}_address_validate'.format(provider)
+            self, '_{0}_address_validate'.format(carrier.carrier_cost_method)
         )()  # pragma: no cover
 
     def serialize(self, purpose=None):
