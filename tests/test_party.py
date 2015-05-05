@@ -266,7 +266,7 @@ class TestParty(unittest.TestCase):
                     self.AddrValWizard(session_id).transition_init()
 
                 self.assertIn(
-                    'Validation method is not selected', e.exception.message
+                    'Validation Carrier is not selected', e.exception.message
                 )
 
 
