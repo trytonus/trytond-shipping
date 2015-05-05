@@ -49,5 +49,9 @@
             <field name="type">form</field>
             <field name="name">no_module_form</field>
         </record>
+
+        <record model="stock.package.type" id="shipment_package_type">
+            <field name="name">Shipment Package</field>
+        </record>
     </data>
 </tryton>

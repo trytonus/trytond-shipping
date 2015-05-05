@@ -230,6 +230,7 @@ class ShippingCarrierSelector(ModelView):
     shipment = fields.Many2One(
         'stock.shipment.out', 'Shipment', required=True, readonly=True
     )
+    no_of_packages = fields.Integer('Number of packages', readonly=True)
 
 
 class GenerateShippingLabelMessage(ModelView):
@@ -320,11 +321,11 @@ class GenerateShippingLabel(Wizard):
         Shipment = Pool().get('stock.shipment.out')
 
         shipment = Shipment(Transaction().context.get('active_id'))
-        self.validate_shipment_packages(shipment)
 
         if shipment.allow_label_generation():
             values = {
                 'shipment': shipment.id,
+                'no_of_packages': len(shipment.packages)
             }
 
         if shipment.carrier:
@@ -337,9 +338,32 @@ class GenerateShippingLabel(Wizard):
     def transition_next(self):
         Shipment = Pool().get('stock.shipment.out')
 
-        self.start.shipment = Shipment(Transaction().context.get('active_id'))
+        shipment = Shipment(Transaction().context.get('active_id'))
+        self.start.shipment = shipment
+
+        if not shipment.packages:
+            self._create_shipment_package()
 
         return 'no_modules'
+
+    def _create_shipment_package(self):
+        """
+        Create a single stock package for the whole shipment
+        """
+        Package = Pool().get('stock.package')
+        ModelData = Pool().get('ir.model.data')
+
+        shipment = self.start.shipment
+        type_id = ModelData.get_id(
+            "shipping", "shipment_package_type"
+        )
+
+        package, = Package.create([{
+            'shipment': '%s,%d' % (shipment.__name__, shipment.id),
+            'type': type_id,
+            'moves': [('add', shipment.outgoing_moves)],
+        }])
+        return package
 
     def default_generate(self, data):
         shipment = self.update_shipment()
@@ -398,12 +422,3 @@ class GenerateShippingLabel(Wizard):
             )
 
         return getattr(shipment, method_name)()
-
-    def validate_shipment_packages(self, shipment):
-        """
-        Validate that the shipment has packages
-
-        :param shipment: Active record of shipment
-        """
-        if not shipment.packages:
-            self.raise_user_error("no_packages", error_args=(shipment.id,))
