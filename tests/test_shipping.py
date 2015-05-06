@@ -689,6 +689,29 @@ class TestShipping(unittest.TestCase):
                 )
             self.assertEqual(len(sale.lines), 2)
 
+    def test_0045_check_shipment_tracking_number_copy(self):
+        """
+        Test that tracking number is not copied while copying shipment
+        """
+        with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.setup_defaults()
+
+            with Transaction().set_context({'company': self.company.id}):
+                shipment1, = self.Shipment.create([{
+                    'planned_date': date.today(),
+                    'effective_date': date.today(),
+                    'customer': self.sale_party.id,
+                    'warehouse': self.StockLocation.search([
+                        ('type', '=', 'warehouse')
+                    ])[0],
+                    'delivery_address': self.sale_party.addresses[0],
+                    'tracking_number': 'A12233',
+                }])
+
+                shipment2, = self.Shipment.copy([shipment1])
+
+                self.assertFalse(shipment2.tracking_number)
+
 
 def suite():
     """

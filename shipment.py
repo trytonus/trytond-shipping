@@ -87,6 +87,8 @@ class ShipmentOut:
         'get_weight_uom'
     )
 
+    tracking_number = fields.Char('Tracking Number', readonly=True)
+
     @classmethod
     def __setup__(cls):
         cls._buttons.update({
@@ -102,11 +104,21 @@ class ShipmentOut:
             'no_shipments': 'There must be atleast one shipment.',
             'too_many_shipments':
                 'The wizard can be called on only one shipment',
+            'tracking_number_already_present':
+                'Tracking Number is already present for this shipment.',
             'invalid_state': 'Labels can only be generated when the '
                 'shipment is in Packed or Done states only',
             'wrong_carrier':
                 'Carrier for selected shipment is not of %s',
         })
+
+    @classmethod
+    def copy(cls, shipments, default=None):
+        if default is None:
+            default = {}
+        default = default.copy()
+        default['tracking_number'] = None
+        return super(ShipmentOut, cls).copy(shipments, default=default)
 
     @classmethod
     @ModelView.button_action('shipping.wizard_generate_shipping_label')
@@ -159,6 +171,9 @@ class ShipmentOut:
         """
         if self.state not in ('packed', 'done'):
             self.raise_user_error('invalid_state')
+
+        if self.tracking_number:
+            self.raise_user_error('tracking_number_already_present')
 
         return True
 
@@ -237,6 +252,7 @@ class GenerateShippingLabelMessage(ModelView):
     'Generate UPS Labels Message'
     __name__ = 'shipping.label.end'
 
+    tracking_number = fields.Char("Tracking number", readonly=True)
     message = fields.Text("Message", readonly=True)
     attachments = fields.One2Many(
         'ir.attachment', None,
@@ -299,6 +315,8 @@ class GenerateShippingLabel(Wizard):
     def __setup__(cls):
         super(GenerateShippingLabel, cls).__setup__()
         cls._error_messages.update({
+            'tracking_number_already_present':
+                'Tracking Number is already present for this shipment.',
             'invalid_state': (
                 'Labels can only be generated when the shipment is in Packed or'
                 ' Done states only'
@@ -369,9 +387,10 @@ class GenerateShippingLabel(Wizard):
         shipment = self.update_shipment()
         shipment.save()
 
-        self.generate_label(shipment)
+        tracking_number = self.generate_label(shipment)
 
         values = {
+            'tracking_number': tracking_number,
             'message': self._get_message(),
             'attachments': self.get_attachments(),
             'cost': shipment.cost,
