@@ -110,6 +110,7 @@ class ShipmentOut:
                 'shipment is in Packed or Done states only',
             'wrong_carrier':
                 'Carrier for selected shipment is not of %s',
+            'no_packages': 'Shipment %s has no packages',
         })
 
     @classmethod
