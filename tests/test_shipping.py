@@ -577,28 +577,8 @@ class TestShipping(unittest.TestCase):
                     )
 
             self.Shipment.pack(sale.shipments)
-            with Transaction().set_context(
-                    active_id=sale.shipments[0], company=self.company.id
-            ):
-                session_id, start_state, end_state = self.LabelWizard.create()
-
-                # No packages in shipment, so error thrown
-                with self.assertRaises(UserError):
-                    result = self.LabelWizard.execute(
-                        session_id, {}, start_state
-                    )
-
             # Create a package for shipment products
             shipment, = sale.shipments
-            package_type, = self.PackageType.create([{
-                'name': 'Box',
-            }])
-            package, = self.Package.create([{
-                'code': 'ABC',
-                'type': package_type.id,
-                'shipment': (shipment.__name__, shipment.id),
-                'moves': [('add', map(int, shipment.outgoing_moves))],
-            }])
 
             with Transaction().set_context(
                     active_id=sale.shipments[0], company=self.company.id
@@ -616,6 +596,15 @@ class TestShipping(unittest.TestCase):
                         'shipment': sale.shipments[0],
                     },
                 }
+
+                self.LabelWizard.execute(
+                    session_id, data, 'next'
+                )
+                # Test if a package was created for shipment
+                self.assertTrue(shipment.packages)
+                self.assertEqual(len(shipment.packages), 1)
+                self.assertEqual(
+                    shipment.packages[0].moves, shipment.outgoing_moves)
 
                 # UserError is thrown in this case.
                 # Label generation feature is unavailable in this module.
@@ -699,6 +688,29 @@ class TestShipping(unittest.TestCase):
                     sale.carrier.party.name
                 )
             self.assertEqual(len(sale.lines), 2)
+
+    def test_0045_check_shipment_tracking_number_copy(self):
+        """
+        Test that tracking number is not copied while copying shipment
+        """
+        with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.setup_defaults()
+
+            with Transaction().set_context({'company': self.company.id}):
+                shipment1, = self.Shipment.create([{
+                    'planned_date': date.today(),
+                    'effective_date': date.today(),
+                    'customer': self.sale_party.id,
+                    'warehouse': self.StockLocation.search([
+                        ('type', '=', 'warehouse')
+                    ])[0],
+                    'delivery_address': self.sale_party.addresses[0],
+                    'tracking_number': 'A12233',
+                }])
+
+                shipment2, = self.Shipment.copy([shipment1])
+
+                self.assertFalse(shipment2.tracking_number)
 
 
 def suite():

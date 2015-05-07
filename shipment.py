@@ -87,6 +87,8 @@ class ShipmentOut:
         'get_weight_uom'
     )
 
+    tracking_number = fields.Char('Tracking Number', readonly=True)
+
     @classmethod
     def __setup__(cls):
         cls._buttons.update({
@@ -102,11 +104,21 @@ class ShipmentOut:
             'no_shipments': 'There must be atleast one shipment.',
             'too_many_shipments':
                 'The wizard can be called on only one shipment',
+            'tracking_number_already_present':
+                'Tracking Number is already present for this shipment.',
             'invalid_state': 'Labels can only be generated when the '
                 'shipment is in Packed or Done states only',
             'wrong_carrier':
                 'Carrier for selected shipment is not of %s',
         })
+
+    @classmethod
+    def copy(cls, shipments, default=None):
+        if default is None:
+            default = {}
+        default = default.copy()
+        default['tracking_number'] = None
+        return super(ShipmentOut, cls).copy(shipments, default=default)
 
     @classmethod
     @ModelView.button_action('shipping.wizard_generate_shipping_label')
@@ -159,6 +171,9 @@ class ShipmentOut:
         """
         if self.state not in ('packed', 'done'):
             self.raise_user_error('invalid_state')
+
+        if self.tracking_number:
+            self.raise_user_error('tracking_number_already_present')
 
         return True
 
@@ -230,12 +245,14 @@ class ShippingCarrierSelector(ModelView):
     shipment = fields.Many2One(
         'stock.shipment.out', 'Shipment', required=True, readonly=True
     )
+    no_of_packages = fields.Integer('Number of packages', readonly=True)
 
 
 class GenerateShippingLabelMessage(ModelView):
     'Generate UPS Labels Message'
     __name__ = 'shipping.label.end'
 
+    tracking_number = fields.Char("Tracking number", readonly=True)
     message = fields.Text("Message", readonly=True)
     attachments = fields.One2Many(
         'ir.attachment', None,
@@ -298,6 +315,8 @@ class GenerateShippingLabel(Wizard):
     def __setup__(cls):
         super(GenerateShippingLabel, cls).__setup__()
         cls._error_messages.update({
+            'tracking_number_already_present':
+                'Tracking Number is already present for this shipment.',
             'invalid_state': (
                 'Labels can only be generated when the shipment is in Packed or'
                 ' Done states only'
@@ -320,11 +339,11 @@ class GenerateShippingLabel(Wizard):
         Shipment = Pool().get('stock.shipment.out')
 
         shipment = Shipment(Transaction().context.get('active_id'))
-        self.validate_shipment_packages(shipment)
 
         if shipment.allow_label_generation():
             values = {
                 'shipment': shipment.id,
+                'no_of_packages': len(shipment.packages)
             }
 
         if shipment.carrier:
@@ -337,17 +356,41 @@ class GenerateShippingLabel(Wizard):
     def transition_next(self):
         Shipment = Pool().get('stock.shipment.out')
 
-        self.start.shipment = Shipment(Transaction().context.get('active_id'))
+        shipment = Shipment(Transaction().context.get('active_id'))
+        self.start.shipment = shipment
+
+        if not shipment.packages:
+            self._create_shipment_package()
 
         return 'no_modules'
+
+    def _create_shipment_package(self):
+        """
+        Create a single stock package for the whole shipment
+        """
+        Package = Pool().get('stock.package')
+        ModelData = Pool().get('ir.model.data')
+
+        shipment = self.start.shipment
+        type_id = ModelData.get_id(
+            "shipping", "shipment_package_type"
+        )
+
+        package, = Package.create([{
+            'shipment': '%s,%d' % (shipment.__name__, shipment.id),
+            'type': type_id,
+            'moves': [('add', shipment.outgoing_moves)],
+        }])
+        return package
 
     def default_generate(self, data):
         shipment = self.update_shipment()
         shipment.save()
 
-        self.generate_label(shipment)
+        tracking_number = self.generate_label(shipment)
 
         values = {
+            'tracking_number': tracking_number,
             'message': self._get_message(),
             'attachments': self.get_attachments(),
             'cost': shipment.cost,
@@ -398,12 +441,3 @@ class GenerateShippingLabel(Wizard):
             )
 
         return getattr(shipment, method_name)()
-
-    def validate_shipment_packages(self, shipment):
-        """
-        Validate that the shipment has packages
-
-        :param shipment: Active record of shipment
-        """
-        if not shipment.packages:
-            self.raise_user_error("no_packages", error_args=(shipment.id,))

@@ -3,6 +3,8 @@
   <image name="tryton-attachment" xexpand="0" xfill="0"/>
   <field name="message" colspan="4"/>
   <newline/>
+  <label name="tracking_number"/>
+  <field name="tracking_number"/>
   <label name="cost"/>
   <field name="cost"/>
   <label name="cost_currency"/>
