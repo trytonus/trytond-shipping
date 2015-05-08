@@ -59,6 +59,8 @@ class TestShipping(unittest.TestCase):
         self.Attachment = POOL.get('ir.attachment')
         self.Shipment = POOL.get('stock.shipment.out')
         self.StockLocation = POOL.get('stock.location')
+        self.Package = POOL.get('stock.package')
+        self.PackageType = POOL.get('stock.package.type')
 
     def setup_defaults(self):
         """
@@ -457,28 +459,43 @@ class TestShipping(unittest.TestCase):
 
                 self.assertTrue(shipment.outgoing_moves)
 
-                self.assertEqual(shipment.weight_uom.name, 'Pound')
+                # Assign and pack the shipment
+                self.Shipment.assign(sale.shipments)
+                self.Shipment.pack(sale.shipments)
+
+                # Create a package for shipment products
+                package_type, = self.PackageType.create([{
+                    'name': 'Box',
+                }])
+                package, = self.Package.create([{
+                    'code': 'ABC',
+                    'type': package_type.id,
+                    'shipment': (shipment.__name__, shipment.id),
+                    'moves': [('add', map(int, shipment.outgoing_moves))],
+                }])
+
+                self.assertEqual(package.weight_uom.name, 'Pound')
 
                 # Shipment package weight
                 # 0.5 kg + 3.0 kg = 7.7 pounds = 8 pounds (after round off)
                 self.assertAlmostEqual(
-                    shipment.computed_weight, Decimal('7.11'), delta=0.001
+                    package.computed_weight, Decimal('7.11'), delta=0.001
                 )
 
-                self.assertFalse(shipment.override_weight)
+                self.assertFalse(package.override_weight)
 
                 # Since weight is not overridden, package weight will be
                 # computed weight
                 self.assertAlmostEqual(
-                    shipment.package_weight, Decimal('7.11'), delta=0.001
+                    package.package_weight, Decimal('7.11'), delta=0.001
                 )
 
-                shipment.override_weight = Decimal('20')
-                shipment.save()
+                package.override_weight = Decimal('20')
+                package.save()
 
                 # Since overridden weight is there, package weight will be
                 # overridden weight
-                self.assertEqual(shipment.package_weight, Decimal('20'))
+                self.assertEqual(package.package_weight, Decimal('20'))
 
     def test_0020_wizard_create(self):
         """
@@ -552,8 +569,6 @@ class TestShipping(unittest.TestCase):
                         start_state: {
                             'carrier': self.carrier,
                             'shipment': sale.shipments[0],
-                            'override_weight':
-                                sale.shipments[0].override_weight,
                         },
                     }
 
@@ -562,11 +577,16 @@ class TestShipping(unittest.TestCase):
                     )
 
             self.Shipment.pack(sale.shipments)
+            # Create a package for shipment products
+            shipment, = sale.shipments
+
             with Transaction().set_context(
                     active_id=sale.shipments[0], company=self.company.id
             ):
                 session_id, start_state, end_state = self.LabelWizard.create()
+
                 result = self.LabelWizard.execute(session_id, {}, start_state)
+
                 self.assertEqual(result.keys(), ['view'])
                 self.assertEqual(len(self.Attachment.search([])), 0)
 
@@ -574,9 +594,17 @@ class TestShipping(unittest.TestCase):
                     start_state: {
                         'carrier': self.carrier,
                         'shipment': sale.shipments[0],
-                        'override_weight': sale.shipments[0].override_weight,
                     },
                 }
+
+                self.LabelWizard.execute(
+                    session_id, data, 'next'
+                )
+                # Test if a package was created for shipment
+                self.assertTrue(shipment.packages)
+                self.assertEqual(len(shipment.packages), 1)
+                self.assertEqual(
+                    shipment.packages[0].moves, shipment.outgoing_moves)
 
                 # UserError is thrown in this case.
                 # Label generation feature is unavailable in this module.

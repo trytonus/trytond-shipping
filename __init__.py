@@ -14,7 +14,7 @@ from party import (
 )
 from shipment import (
     ShipmentOut, StockMove, GenerateShippingLabelMessage, GenerateShippingLabel,
-    ShippingCarrierSelector, ShippingLabelNoModules
+    ShippingCarrierSelector, ShippingLabelNoModules, Package
 )
 from sale import Sale, SaleLine
 from log import CarrierLog
@@ -28,6 +28,7 @@ def register():
         Address,
         ShipmentOut,
         StockMove,
+        Package,
         Sale,
         SaleLine,
         GenerateShippingLabelMessage,

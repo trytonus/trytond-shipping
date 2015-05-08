@@ -16,7 +16,8 @@ from trytond.transaction import Transaction
 __metaclass__ = PoolMeta
 __all__ = [
     'ShipmentOut', 'StockMove', 'GenerateShippingLabelMessage',
-    'GenerateShippingLabel', 'ShippingCarrierSelector', 'ShippingLabelNoModules'
+    'GenerateShippingLabel', 'ShippingCarrierSelector',
+    'ShippingLabelNoModules', 'Package'
 ]
 
 STATES = {
@@ -24,16 +25,10 @@ STATES = {
 }
 
 
-class ShipmentOut:
-    "Shipment Out"
-    __name__ = 'stock.shipment.out'
+class Package:
+    __name__ = 'stock.package'
 
-    tracking_number = fields.Char('Tracking Number', states=STATES)
-
-    is_international_shipping = fields.Function(
-        fields.Boolean("Is International Shipping"),
-        'on_change_with_is_international_shipping'
-    )
+    tracking_number = fields.Char('Tracking Number', readonly=True)
 
     package_weight = fields.Function(
         fields.Numeric("Package weight", digits=(16,  2)),
@@ -51,6 +46,48 @@ class ShipmentOut:
     )
 
     override_weight = fields.Numeric("Override Weight", digits=(16,  2))
+
+    def get_weight_uom(self, name):
+        """
+        Returns weight uom for the package from shipment
+        """
+        return self.shipment.weight_uom.id
+
+    def get_package_weight(self, name):
+        """
+        Returns package weight if weight is not overriden
+        otherwise returns overriden weight
+        """
+        return self.override_weight or self.get_computed_weight()
+
+    def get_computed_weight(self, name=None):
+        """
+        Returns sum of weight associated with each move line
+        """
+        weight = Decimal(sum(
+            map(
+                lambda move: move.get_weight(self.weight_uom, silent=True),
+                self.moves
+            )
+        ))
+        return weight.quantize(Decimal('0.01'))  # Quantize to 2 decimal place
+
+
+class ShipmentOut:
+    "Shipment Out"
+    __name__ = 'stock.shipment.out'
+
+    is_international_shipping = fields.Function(
+        fields.Boolean("Is International Shipping"),
+        'on_change_with_is_international_shipping'
+    )
+
+    weight_uom = fields.Function(
+        fields.Many2One('product.uom', 'Weight UOM'),
+        'get_weight_uom'
+    )
+
+    tracking_number = fields.Char('Tracking Number', readonly=True)
 
     @classmethod
     def __setup__(cls):
@@ -73,6 +110,7 @@ class ShipmentOut:
                 'shipment is in Packed or Done states only',
             'wrong_carrier':
                 'Carrier for selected shipment is not of %s',
+            'no_packages': 'Shipment %s has no packages',
         })
 
     @classmethod
@@ -91,12 +129,6 @@ class ShipmentOut:
         elif len(shipments) > 1:
             cls.raise_user_error('too_many_shipments')
 
-    def get_weight_uom(self, name):
-        """
-        Returns weight uom for the package
-        """
-        return self._get_weight_uom().id
-
     @fields.depends('delivery_address', 'warehouse')
     def on_change_with_is_international_shipping(self, name=None):
         """
@@ -109,6 +141,12 @@ class ShipmentOut:
            from_address.country != self.delivery_address.country:
             return True
         return False
+
+    def get_weight_uom(self, name):
+        """
+        Returns weight uom for the package
+        """
+        return self._get_weight_uom().id
 
     def _get_weight_uom(self):
         """
@@ -126,26 +164,6 @@ class ShipmentOut:
         Usually the warehouse from which you ship
         """
         return self.warehouse and self.warehouse.address
-
-    def get_package_weight(self, name):
-        """
-        Returns package weight if weight is not overriden
-        otherwise returns overriden weight
-        """
-        return self.override_weight or self.get_computed_weight()
-
-    def get_computed_weight(self, name=None):
-        """
-        Returns sum of weight associated with each move line
-        """
-        weight_uom = self._get_weight_uom()
-        weight = Decimal(sum(
-            map(
-                lambda move: move.get_weight(weight_uom, silent=True),
-                self.outgoing_moves
-            )
-        ))
-        return weight.quantize(Decimal('0.01'))  # Quantize to 2 decimal place
 
     def allow_label_generation(self):
         """
@@ -225,10 +243,10 @@ class ShippingCarrierSelector(ModelView):
     carrier = fields.Many2One(
         "carrier", "Carrier", required=True
     )
-    override_weight = fields.Numeric("Override Weight", digits=(16,  2))
     shipment = fields.Many2One(
         'stock.shipment.out', 'Shipment', required=True, readonly=True
     )
+    no_of_packages = fields.Integer('Number of packages', readonly=True)
 
 
 class GenerateShippingLabelMessage(ModelView):
@@ -300,8 +318,11 @@ class GenerateShippingLabel(Wizard):
         cls._error_messages.update({
             'tracking_number_already_present':
                 'Tracking Number is already present for this shipment.',
-            'invalid_state': 'Labels can only be generated when the '
-                'shipment is in Packed or Done states only',
+            'invalid_state': (
+                'Labels can only be generated when the shipment is in Packed or'
+                ' Done states only'
+            ),
+            'no_packages': 'Shipment %s has no packages',
         })
 
     def _get_message(self):  # pragma: no cover
@@ -323,7 +344,7 @@ class GenerateShippingLabel(Wizard):
         if shipment.allow_label_generation():
             values = {
                 'shipment': shipment.id,
-                'override_weight': shipment.override_weight,
+                'no_of_packages': len(shipment.packages)
             }
 
         if shipment.carrier:
@@ -336,8 +357,32 @@ class GenerateShippingLabel(Wizard):
     def transition_next(self):
         Shipment = Pool().get('stock.shipment.out')
 
-        self.start.shipment = Shipment(Transaction().context.get('active_id'))
+        shipment = Shipment(Transaction().context.get('active_id'))
+        self.start.shipment = shipment
+
+        if not shipment.packages:
+            self._create_shipment_package()
+
         return 'no_modules'
+
+    def _create_shipment_package(self):
+        """
+        Create a single stock package for the whole shipment
+        """
+        Package = Pool().get('stock.package')
+        ModelData = Pool().get('ir.model.data')
+
+        shipment = self.start.shipment
+        type_id = ModelData.get_id(
+            "shipping", "shipment_package_type"
+        )
+
+        package, = Package.create([{
+            'shipment': '%s,%d' % (shipment.__name__, shipment.id),
+            'type': type_id,
+            'moves': [('add', shipment.outgoing_moves)],
+        }])
+        return package
 
     def default_generate(self, data):
         shipment = self.update_shipment()
@@ -380,7 +425,6 @@ class GenerateShippingLabel(Wizard):
         """
         shipment = self.start.shipment
         shipment.carrier = self.start.carrier
-        shipment.override_weight = self.start.override_weight
 
         return shipment
 
