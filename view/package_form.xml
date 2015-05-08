@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<data>
+    <xpath expr="/form/field[@name='shipment']" position="after">
+        <notebook colspan="4">
+            <page id="weight" string="Weight Details">
+                <label name="computed_weight"/>
+                <field name="computed_weight"/>
+                <label name="package_weight"/>
+                <field name="package_weight"/>
+                <label name="weight_uom"/>
+                <field name="weight_uom"/>
+                <label name="override_weight"/>
+                <field name="override_weight"/>
+                <label name="tracking_number"/>
+                <field name="tracking_number"/>
+            </page>
+        </notebook>
+    </xpath>
+</data>
