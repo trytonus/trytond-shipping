@@ -5,10 +5,9 @@
     :copyright: (c) 2014 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
-from decimal import Decimal
-
 from trytond.model import fields
 from trytond.pool import PoolMeta, Pool
+from trytond.pyson import Eval
 
 __all__ = ['SaleLine', 'Sale']
 __metaclass__ = PoolMeta
@@ -23,7 +22,10 @@ class Sale:
         'on_change_with_is_international_shipping'
     )
     package_weight = fields.Function(
-        fields.Numeric("Package weight", digits=(16,  2)),
+        fields.Float(
+            "Package weight", digits=(16,  Eval('weight_digits', 2)),
+            depends=['weight_digits'],
+        ),
         'get_package_weight'
     )
 
@@ -31,6 +33,15 @@ class Sale:
         fields.Many2One('product.uom', 'Weight UOM'),
         'get_weight_uom'
     )
+    weight_digits = fields.Function(
+        fields.Integer('Weight Digits'), 'on_change_with_weight_digits'
+    )
+
+    @fields.depends('weight_uom')
+    def on_change_with_weight_digits(self, name=None):
+        if self.weight_uom:
+            return self.weight_uom.digits
+        return 2
 
     def get_weight_uom(self, name):
         """
@@ -73,13 +84,12 @@ class Sale:
         """
         Returns sum of weight associated with package
         """
-        weight = Decimal(sum(
+        return sum(
             map(
                 lambda line: line.get_weight(uom, silent=True),
                 self.lines
             )
-        ))
-        return weight.quantize(Decimal('0.01'))  # Quantize to 2 decimal place
+        )
 
     def _get_ship_from_address(self):
         """
@@ -138,11 +148,11 @@ class SaleLine:
 
         if not self.product or self.quantity <= 0 or \
                 self.product.type == 'service':
-            return Decimal('0')
+            return 0
 
         if not self.product.weight:
             if silent:
-                return Decimal('0')
+                return 0
             self.raise_user_error(
                 'weight_required',
                 error_args=(self.product.name,)
@@ -170,4 +180,4 @@ class SaleLine:
                 weight_uom,
             )
 
-        return Decimal(weight)
+        return weight
