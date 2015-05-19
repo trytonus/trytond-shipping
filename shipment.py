@@ -5,8 +5,6 @@
     :copyright: (c) 2014-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
-from decimal import Decimal
-
 from trytond.model import fields, ModelView
 from trytond.pool import PoolMeta, Pool
 from trytond.wizard import Wizard, StateView, Button, StateTransition
@@ -30,22 +28,39 @@ class Package:
 
     tracking_number = fields.Char('Tracking Number', readonly=True)
 
-    package_weight = fields.Function(
-        fields.Numeric("Package weight", digits=(16,  2)),
-        'get_package_weight'
+    weight = fields.Function(
+        fields.Float(
+            "Weight", digits=(16,  Eval('weight_digits', 2)),
+            depends=['weight_digits'],
+        ),
+        'get_weight'
     )
-
     weight_uom = fields.Function(
         fields.Many2One('product.uom', 'Weight UOM'),
         'get_weight_uom'
     )
+    weight_digits = fields.Function(
+        fields.Integer('Weight Digits'), 'on_change_with_weight_digits'
+    )
 
     computed_weight = fields.Function(
-        fields.Numeric("Computed Weight", digits=(16,  2)),
+        fields.Float(
+            "Computed Weight", digits=(16,  Eval('weight_digits', 2)),
+            depends=['weight_digits'],
+        ),
         'get_computed_weight'
     )
 
-    override_weight = fields.Numeric("Override Weight", digits=(16,  2))
+    override_weight = fields.Float(
+        "Override Weight", digits=(16,  Eval('weight_digits', 2)),
+        depends=['weight_digits'],
+    )
+
+    @fields.depends('weight_uom')
+    def on_change_with_weight_digits(self, name=None):
+        if self.weight_uom:
+            return self.weight_uom.digits
+        return 2
 
     def get_weight_uom(self, name):
         """
@@ -53,7 +68,7 @@ class Package:
         """
         return self.shipment.weight_uom.id
 
-    def get_package_weight(self, name):
+    def get_weight(self, name):
         """
         Returns package weight if weight is not overriden
         otherwise returns overriden weight
@@ -64,13 +79,13 @@ class Package:
         """
         Returns sum of weight associated with each move line
         """
-        weight = Decimal(sum(
+        weight = sum(
             map(
                 lambda move: move.get_weight(self.weight_uom, silent=True),
                 self.moves
             )
-        ))
-        return weight.quantize(Decimal('0.01'))  # Quantize to 2 decimal place
+        )
+        return weight
 
 
 class ShipmentOut:
@@ -82,12 +97,39 @@ class ShipmentOut:
         'on_change_with_is_international_shipping'
     )
 
+    weight = fields.Function(
+        fields.Float(
+            "Weight", digits=(16,  Eval('weight_digits', 2)),
+            depends=['weight_digits'],
+        ),
+        'get_weight'
+    )
     weight_uom = fields.Function(
         fields.Many2One('product.uom', 'Weight UOM'),
         'get_weight_uom'
     )
+    weight_digits = fields.Function(
+        fields.Integer('Weight Digits'), 'on_change_with_weight_digits'
+    )
 
     tracking_number = fields.Char('Tracking Number', readonly=True)
+
+    def get_weight(self, name=None):
+        """
+        Returns sum of weight associated with each move line
+        """
+        return sum(
+            map(
+                lambda move: move.get_weight(self.weight_uom, silent=True),
+                self.outgoing_moves
+            )
+        )
+
+    @fields.depends('weight_uom')
+    def on_change_with_weight_digits(self, name=None):
+        if self.weight_uom:
+            return self.weight_uom.digits
+        return 2
 
     @classmethod
     def __setup__(cls):
@@ -201,11 +243,11 @@ class StockMove:
         ProductUom = Pool().get('product.uom')
 
         if self.quantity <= 0:
-            return Decimal('0')
+            return 0
 
         if not self.product.weight:
             if silent:
-                return Decimal('0')
+                return 0
             self.raise_user_error(
                 'weight_required',
                 error_args=(self.product.name,)
@@ -233,7 +275,7 @@ class StockMove:
                 weight_uom
             )
 
-        return Decimal(weight)
+        return weight
 
 
 class ShippingCarrierSelector(ModelView):
