@@ -282,7 +282,7 @@ class TestShipping(unittest.TestCase):
             }])
             weight = sale_line1.get_weight(self.uom_kg)
 
-            self.assertEqual(weight, Decimal('0'))
+            self.assertEqual(weight, 0)
 
             # Sale line with product but quantity as 0
             product = self.create_product(0.5, self.uom_kg)
@@ -297,7 +297,7 @@ class TestShipping(unittest.TestCase):
             }])
             weight = sale_line2.get_weight(self.uom_kg)
 
-            self.assertEqual(weight, Decimal('0'))
+            self.assertEqual(weight, 0)
 
             # Sale line with service product and quantity > 0
             service_product = self.create_product(
@@ -315,7 +315,7 @@ class TestShipping(unittest.TestCase):
 
             weight = sale_line3.get_weight(self.uom_kg)
 
-            self.assertEqual(weight, Decimal('0'))
+            self.assertEqual(weight, 0)
 
             # Sale line with product having no weight
             product = self.create_product()
@@ -346,7 +346,7 @@ class TestShipping(unittest.TestCase):
 
             weight = sale_line5.get_weight(self.uom_pound)
 
-            self.assertEqual(weight, Decimal('0.5'))
+            self.assertEqual(weight, 0.5)
 
             # Sale line with uom same as product uom
             product = self.create_product(3, self.uom_kg)
@@ -362,13 +362,13 @@ class TestShipping(unittest.TestCase):
 
             weight = sale_line6.get_weight(self.uom_kg)
 
-            self.assertEqual(weight, Decimal('3'))
+            self.assertEqual(weight, 3)
 
             self.assertEqual(sale.weight_uom.name, 'Pound')
 
             # 0.5 kg + 3.0 kg = 3.5 kg = 7.11 pounds (approx.)
             self.assertAlmostEqual(
-                sale.package_weight, Decimal('7.11'), delta=0.001
+                sale.package_weight, 7.11, delta=0.001
             )
 
     def test_0010_stock_move_weight(self):
@@ -404,7 +404,7 @@ class TestShipping(unittest.TestCase):
 
                 weight = sale_line3.get_weight(self.uom_kg)
 
-                self.assertEqual(weight, Decimal('0'))
+                self.assertEqual(weight, 0)
 
                 # Sale line with uom different from product uom
                 product = self.create_product(0.5, self.uom_kg)
@@ -420,7 +420,7 @@ class TestShipping(unittest.TestCase):
 
                 weight = sale_line5.get_weight(self.uom_pound)
 
-                self.assertEqual(weight, Decimal('0.5'))
+                self.assertEqual(weight, 0.5)
 
                 # Sale line with uom same as product uom
                 product = self.create_product(3, self.uom_kg)
@@ -436,7 +436,7 @@ class TestShipping(unittest.TestCase):
 
                 weight = sale_line6.get_weight(self.uom_kg)
 
-                self.assertEqual(weight, Decimal('3'))
+                self.assertEqual(weight, 3)
 
                 self.assertEqual(sale.weight_uom.name, 'Pound')
 
@@ -444,7 +444,7 @@ class TestShipping(unittest.TestCase):
 
                 # 0.5 kg + 3.0 kg = 3.5 kg = 7.11 pounds (approx.)
                 self.assertAlmostEqual(
-                    sale.package_weight, Decimal('7.11'), delta=0.001
+                    sale.package_weight, 7.11, delta=0.001
                 )
 
                 self.Sale.quote([sale])
@@ -479,7 +479,7 @@ class TestShipping(unittest.TestCase):
                 # Shipment package weight
                 # 0.5 kg + 3.0 kg = 7.7 pounds = 8 pounds (after round off)
                 self.assertAlmostEqual(
-                    package.computed_weight, Decimal('7.11'), delta=0.001
+                    package.computed_weight, 7.11, delta=0.001
                 )
 
                 self.assertFalse(package.override_weight)
@@ -487,15 +487,15 @@ class TestShipping(unittest.TestCase):
                 # Since weight is not overridden, package weight will be
                 # computed weight
                 self.assertAlmostEqual(
-                    package.package_weight, Decimal('7.11'), delta=0.001
+                    package.weight, 7.11, delta=0.001
                 )
 
-                package.override_weight = Decimal('20')
+                package.override_weight = 20
                 package.save()
 
                 # Since overridden weight is there, package weight will be
                 # overridden weight
-                self.assertEqual(package.package_weight, Decimal('20'))
+                self.assertEqual(package.weight, 20)
 
     def test_0020_wizard_create(self):
         """

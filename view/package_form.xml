@@ -5,8 +5,8 @@
             <page id="weight" string="Weight Details">
                 <label name="computed_weight"/>
                 <field name="computed_weight"/>
-                <label name="package_weight"/>
-                <field name="package_weight"/>
+                <label name="weight"/>
+                <field name="weight"/>
                 <label name="weight_uom"/>
                 <field name="weight_uom"/>
                 <label name="override_weight"/>
