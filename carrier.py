@@ -6,7 +6,7 @@
     :license: BSD, see LICENSE for more details.
 """
 from trytond import backend
-from trytond.pool import PoolMeta
+from trytond.pool import PoolMeta, Pool
 from trytond.model import ModelView, ModelSQL, ModelSingleton, fields
 from trytond.transaction import Transaction
 
@@ -54,6 +54,16 @@ class CarrierConfig(ModelSingleton, ModelSQL, ModelView):
 class Carrier:
     "Carrier"
     __name__ = 'carrier'
+
+    currency = fields.Many2One('currency.currency', 'Currency', required=True)
+
+    @staticmethod
+    def default_currency():
+        Company = Pool().get('company.company')
+
+        company = Transaction().context.get('company')
+        if company:
+            return Company(company).currency.id
 
     def get_rates(self):
         """

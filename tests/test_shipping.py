@@ -138,6 +138,7 @@ class TestShipping(unittest.TestCase):
         self.carrier, = self.Carrier.create([{
             'party': carrier_party,
             'carrier_product': carrier_product,
+            'currency': currency,
         }])
 
         warehouse_address, = self.Address.create([{
