@@ -2,8 +2,6 @@
 """
     carrier.py
 
-    :copyright: (c) 2014 by Openlabs Technologies & Consulting (P) Limited
-    :license: BSD, see LICENSE for more details.
 """
 from trytond import backend
 from trytond.pool import PoolMeta, Pool

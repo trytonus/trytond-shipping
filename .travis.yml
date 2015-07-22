@@ -8,4 +8,4 @@ env:
   - TEST_CMD="flake8"
 notifications:
   email:
-  - ci-notify@openlabs.co.in
+  - ci-notify@fulfil.io
