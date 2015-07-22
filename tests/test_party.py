@@ -2,8 +2,6 @@
 """
     tests/test_party.py
 
-    :copyright: (C) 2015 by Openlabs Technologies & Consulting (P) Limited
-    :license: BSD, see LICENSE for more details.
 """
 import sys
 import os
