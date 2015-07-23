@@ -37,6 +37,13 @@ class Sale:
         fields.Integer('Weight Digits'), 'on_change_with_weight_digits'
     )
 
+    @classmethod
+    def __setup__(cls):
+        super(Sale, cls).__setup__()
+        cls._error_messages.update({
+            'warehouse_address_missing': 'Warehouse address is missing',
+        })
+
     @fields.depends('weight_uom')
     def on_change_with_weight_digits(self, name=None):
         if self.weight_uom:
@@ -95,6 +102,8 @@ class Sale:
         """
         Usually the warehouse from which you ship
         """
+        if not self.warehouse.address:
+            return self.raise_user_error('warehouse_address_missing')
         return self.warehouse and self.warehouse.address
 
     def add_shipping_line(self, shipment_cost, description):
