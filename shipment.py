@@ -131,6 +131,7 @@ class ShipmentOut:
 
     @classmethod
     def __setup__(cls):
+        super(ShipmentOut, cls).__setup__()
         cls._buttons.update({
             'label_wizard': {
                 'invisible': Or(
@@ -151,6 +152,7 @@ class ShipmentOut:
             'wrong_carrier':
                 'Carrier for selected shipment is not of %s',
             'no_packages': 'Shipment %s has no packages',
+            'warehouse_address_missing': 'Warehouse address is missing',
         })
 
     @classmethod
@@ -175,7 +177,6 @@ class ShipmentOut:
         Return True if international shipping
         """
         from_address = self._get_ship_from_address()
-
         if self.delivery_address and from_address and \
            from_address.country and self.delivery_address.country and \
            from_address.country != self.delivery_address.country:
@@ -203,6 +204,8 @@ class ShipmentOut:
         """
         Usually the warehouse from which you ship
         """
+        if not self.warehouse.address:
+            return self.raise_user_error('warehouse_address_missing')
         return self.warehouse and self.warehouse.address
 
     def allow_label_generation(self):
