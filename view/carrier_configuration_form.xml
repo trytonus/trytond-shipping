@@ -1,4 +1,0 @@
-<form string="Carrier Configuration">
-    <label name="default_validation_carrier" />
-    <field name="default_validation_carrier" />
-</form>

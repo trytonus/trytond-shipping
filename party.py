@@ -101,7 +101,7 @@ class Address:
         in
         :ref:`address class <trytond-ups:party.Address._ups_address_validate>`.
         """
-        CarrierConfig = Pool().get('carrier.configuration')
+        CarrierConfig = Pool().get('party.configuration')
 
         config = CarrierConfig(1)
         carrier = carrier or config.default_validation_carrier
