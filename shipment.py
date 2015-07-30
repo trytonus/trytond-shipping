@@ -204,7 +204,7 @@ class ShipmentOut:
         """
         Usually the warehouse from which you ship
         """
-        if not self.warehouse.address:
+        if self.warehouse and not self.warehouse.address:
             return self.raise_user_error('warehouse_address_missing')
         return self.warehouse and self.warehouse.address
 
