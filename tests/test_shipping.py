@@ -367,7 +367,7 @@ class TestShipping(unittest.TestCase):
 
             # 0.5 kg + 3.0 kg = 3.5 kg = 7.11 pounds (approx.)
             self.assertAlmostEqual(
-                sale.package_weight, 7.11, delta=0.001
+                sale.total_weight, 7.11, delta=0.001
             )
 
     def test_0010_stock_move_weight(self):
@@ -443,7 +443,7 @@ class TestShipping(unittest.TestCase):
 
                 # 0.5 kg + 3.0 kg = 3.5 kg = 7.11 pounds (approx.)
                 self.assertAlmostEqual(
-                    sale.package_weight, 7.11, delta=0.001
+                    sale.total_weight, 7.11, delta=0.001
                 )
 
                 self.Sale.quote([sale])
