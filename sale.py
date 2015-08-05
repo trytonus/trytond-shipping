@@ -3,6 +3,7 @@
     sale.py
 
 """
+import warnings
 from trytond.model import fields
 from trytond.pool import PoolMeta, Pool
 from trytond.pyson import Eval
@@ -25,6 +26,14 @@ class Sale:
             depends=['weight_digits'],
         ),
         'get_package_weight'
+    )
+
+    total_weight = fields.Function(
+        fields.Float(
+            "Total weight", digits=(16,  Eval('weight_digits', 2)),
+            depends=['weight_digits'],
+        ),
+        'get_total_weight'
     )
 
     weight_uom = fields.Function(
@@ -69,8 +78,19 @@ class Sale:
         """
         Returns sum of weight associated with each line
         """
+        warnings.warn(
+            'Field package_weight is depricated, use total_weight instead',
+            DeprecationWarning, stacklevel=2
+        )
         weight_uom = self._get_weight_uom()
         return self._get_package_weight(weight_uom)
+
+    def get_total_weight(self, name):
+        """
+        Returns sum of weight associated with each line
+        """
+        weight_uom = self._get_weight_uom()
+        return self._get_total_weight(weight_uom)
 
     @fields.depends('party', 'shipment_address', 'warehouse')
     def on_change_with_is_international_shipping(self, name=None):
@@ -88,6 +108,21 @@ class Sale:
     def _get_package_weight(self, uom):
         """
         Returns sum of weight associated with package
+        """
+        warnings.warn(
+            '_get_package_weight is depricated, use _get_total_weight instead',
+            DeprecationWarning, stacklevel=2
+        )
+        return sum(
+            map(
+                lambda line: line.get_weight(uom, silent=True),
+                self.lines
+            )
+        )
+
+    def _get_total_weight(self, uom):
+        """
+        Returns sum of weight for given uom
         """
         return sum(
             map(

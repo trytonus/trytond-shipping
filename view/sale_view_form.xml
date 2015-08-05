@@ -2,8 +2,8 @@
 <data>
     <xpath expr="//notebook" position="inside">
         <page id="carrier" string="Carrier Details">
-            <label name="package_weight"/>
-            <field name="package_weight"/>
+            <label name="total_weight"/>
+            <field name="total_weight"/>
             <label name="weight_uom"/>
             <field name="weight_uom"/>
         </page>
