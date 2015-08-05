@@ -7,4 +7,11 @@
     <xpath expr="/form/group[@id='state_buttons']/group[@id='buttons']/button[@name='done']" position="after">
         <button string="Generate shipping label" name="label_wizard"/>
     </xpath>
+    <xpath expr="//field[@name='root_packages']" position="replace">
+    </xpath>
+    <xpath expr="/form/notebook/page[@id='outgoing_moves']" position="after">
+        <page id="packages" string="Packages">
+            <field name="root_packages" colspan="4" view_ids="stock_package.package_view_tree"/>
+        </page>
+    </xpath>
 </data>
