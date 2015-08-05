@@ -24,7 +24,7 @@ STATES = {
 class Package:
     __name__ = 'stock.package'
 
-    tracking_number = fields.Char('Tracking Number', readonly=True)
+    tracking_number = fields.Char('Tracking Number')
 
     weight = fields.Function(
         fields.Float(
@@ -110,7 +110,8 @@ class ShipmentOut:
         fields.Integer('Weight Digits'), 'on_change_with_weight_digits'
     )
 
-    tracking_number = fields.Char('Tracking Number', readonly=True)
+    tracking_number = fields.Char(
+        'Tracking Number', states=STATES, depends=['state'])
 
     def get_weight(self, name=None):
         """
