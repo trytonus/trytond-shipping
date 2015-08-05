@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<data>
+    <xpath expr="//field[@name='rec_name']" position="replace">
+        <field name="code"/>
+    </xpath>
+    <xpath expr="//field[@name='type']" position="after">
+        <field name="weight"/>
+        <field name="tracking_number"/>
+    </xpath>
+</data>
