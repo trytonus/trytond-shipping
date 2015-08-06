@@ -223,3 +223,15 @@ class SaleLine:
             )
 
         return weight
+
+
+class ReturnSale:
+    __name__ = 'sale.return_sale'
+
+    def do_return_(self, action):
+        Sale = Pool().get('sale.sale')
+        action, data = super(ReturnSale, self).do_return_(action)
+
+        Sale.write(Sale.browse(data['res_id']), {'carrier': None})
+
+        return action, data
