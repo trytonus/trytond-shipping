@@ -14,7 +14,7 @@ from shipment import (
     ShipmentOut, StockMove, GenerateShippingLabelMessage, GenerateShippingLabel,
     ShippingCarrierSelector, ShippingLabelNoModules, Package
 )
-from sale import Sale, SaleLine
+from sale import Sale, SaleLine, ReturnSale
 from log import CarrierLog
 
 
@@ -39,5 +39,6 @@ def register():
     Pool.register(
         GenerateShippingLabel,
         AddressValidationWizard,
+        ReturnSale,
         module='shipping', type_='wizard'
     )
