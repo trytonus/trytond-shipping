@@ -1,0 +1,5 @@
+<data>
+    <xpath expr="//field[@name='customer']" position="after">
+        <field name="warehouse"/>
+    </xpath>
+</data>
