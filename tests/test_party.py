@@ -51,7 +51,7 @@ class TestParty(unittest.TestCase):
         self.Account = POOL.get('account.account')
         self.Product = POOL.get('product.product')
         self.Carrier = POOL.get('carrier')
-        self.CarrierConf = POOL.get('carrier.configuration')
+        self.PartyConf = POOL.get('party.configuration')
         self.AddrValWizard = POOL.get('party.address.validation', type='wizard')
         self.Attachment = POOL.get('ir.attachment')
         self.Shipment = POOL.get('stock.shipment.out')

@@ -5,7 +5,7 @@
 """
 from trytond.pool import Pool
 
-from carrier import Carrier, CarrierConfig
+from carrier import Carrier
 from party import (
     Address, AddressValidationMsg, AddressValidationWizard,
     AddressValidationSuggestionView
@@ -15,12 +15,13 @@ from shipment import (
     ShippingCarrierSelector, ShippingLabelNoModules, Package
 )
 from sale import Sale, SaleLine, ReturnSale
+from configuration import PartyConfiguration
 from log import CarrierLog
 
 
 def register():
     Pool.register(
-        CarrierConfig,
+        PartyConfiguration,
         Carrier,
         CarrierLog,
         Address,
