@@ -290,6 +290,7 @@ class ShippingCarrierSelector(ModelView):
     shipment = fields.Many2One(
         'stock.shipment.out', 'Shipment', required=True, readonly=True
     )
+    override_weight = fields.Numeric("Override Weight", digits=(16,  2))
     no_of_packages = fields.Integer('Number of packages', readonly=True)
 
 
@@ -395,6 +396,12 @@ class GenerateShippingLabel(Wizard):
             values.update({
                 'carrier': shipment.carrier.id,
             })
+        if shipment.packages:
+            package_weights = [
+                p.override_weight
+                for p in shipment.packages if p.override_weight
+            ]
+            values['override_weight'] = sum(package_weights)
 
         return values
 
@@ -406,6 +413,15 @@ class GenerateShippingLabel(Wizard):
 
         if not shipment.packages:
             self._create_shipment_package()
+
+        if self.start.override_weight:
+            # Distribute weight equally
+            per_package_weight = (
+                self.start.override_weight / len(shipment.packages)
+            )
+            for package in shipment.packages:
+                package.override_weight = per_package_weight
+                package.save()
 
         return 'no_modules'
 
