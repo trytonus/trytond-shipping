@@ -6,7 +6,7 @@
 from trytond.model import fields, ModelView
 from trytond.pool import PoolMeta, Pool
 from trytond.wizard import Wizard, StateView, Button, StateTransition
-from trytond.pyson import Eval, Or
+from trytond.pyson import Eval, Or, Bool
 from trytond.transaction import Transaction
 
 __metaclass__ = PoolMeta
@@ -292,6 +292,13 @@ class ShippingCarrierSelector(ModelView):
     )
     override_weight = fields.Numeric("Override Weight", digits=(16,  2))
     no_of_packages = fields.Integer('Number of packages', readonly=True)
+
+    @classmethod
+    def view_attributes(cls):
+        return super(ShippingCarrierSelector, cls).view_attributes() + [
+            ('//label[@name="no_of_packages"]', 'states', {
+                'invisible': Bool(Eval('no_of_packages'))
+            })]
 
 
 class GenerateShippingLabelMessage(ModelView):
