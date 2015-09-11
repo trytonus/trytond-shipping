@@ -290,7 +290,7 @@ class ShippingCarrierSelector(ModelView):
     shipment = fields.Many2One(
         'stock.shipment.out', 'Shipment', required=True, readonly=True
     )
-    override_weight = fields.Numeric("Override Weight", digits=(16,  2))
+    override_weight = fields.Float("Override Weight", digits=(16,  2))
     no_of_packages = fields.Integer('Number of packages', readonly=True)
 
     @classmethod
