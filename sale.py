@@ -162,7 +162,8 @@ class Sale:
                     'sequence': 9999,  # XXX
                 }]),
                 ('delete', [
-                    line for line in self.lines if line.shipment_cost
+                    line for line in self.lines
+                    if line.shipment_cost is not None
                 ]),
             ]
         })
