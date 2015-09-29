@@ -38,4 +38,6 @@ class Carrier:
 
         Downstream shipping modules can implement this to get shipping rates.
         """
+        # TODO: Remove this method in next version and use `get_shipping_rates`
+        # method in sale instead
         return []  # pragma: no cover
