@@ -7,6 +7,7 @@ import warnings
 from trytond.model import fields
 from trytond.pool import PoolMeta, Pool
 from trytond.pyson import Eval
+from trytond.transaction import Transaction
 
 __all__ = ['SaleLine', 'Sale']
 __metaclass__ = PoolMeta
@@ -166,6 +167,31 @@ class Sale:
                 ]),
             ]
         })
+
+    def get_shipping_rates(self, carrier):
+        """
+        Return list of tuples as:
+            [
+                (
+                    <display method name>, <cost>, <currency>, <metadata>,
+                    <write_vals>
+                )
+                ...
+            ]
+        """
+        Currency = Pool().get('currency.currency')
+
+        if carrier.carrier_cost_method == 'product':
+            with Transaction().set_context(self._get_carrier_context()):
+                cost, currency_id = carrier.get_sale_price()
+            return [(
+                carrier.rec_name,
+                cost,
+                Currency(currency_id),
+                {},
+                {'carrier': carrier.id},
+            )]
+        return []
 
 
 class SaleLine:
