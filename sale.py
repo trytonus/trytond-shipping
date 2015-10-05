@@ -8,6 +8,7 @@ from trytond.model import fields
 from trytond.pool import PoolMeta, Pool
 from trytond.pyson import Eval
 from trytond.transaction import Transaction
+from trytond.exceptions import UserError
 
 __all__ = ['SaleLine', 'Sale']
 __metaclass__ = PoolMeta
@@ -207,6 +208,42 @@ class Sale:
                 {'carrier': carrier.id},
             )]
         return []
+
+    @classmethod
+    def get_allowed_carriers_domain(cls):
+        """This method returns domain to seach allowed carriers
+
+        Downstream modules can inherit and update customize this domain.
+        """
+        return []
+
+    def get_all_shipping_rates(self):
+        """
+        Return shipping rates for all allowed carriers
+
+        Return list of tuples as:
+            [
+                (
+                    <display method name>, <rate>, <currency>, <metadata>,
+                    <write_vals>
+                )
+                ...
+            ]
+        """
+        Carrier = Pool().get('carrier')
+
+        carriers = Carrier.search(self.get_allowed_carriers_domain())
+        errors = []
+        rate_list = []
+        for carrier in carriers:
+            try:
+                rate_list += self.get_shipping_rates(carrier=carrier)
+            except UserError, e:
+                # XXX: Collect all errors from shipping carriers
+                errors.append(e.message)
+        if not rate_list and errors:
+            raise self.raise_user_error('\n'.join(errors))
+        return rate_list
 
 
 class SaleLine:
