@@ -169,6 +169,20 @@ class Sale:
             ]
         })
 
+    def apply_product_shipping(self):
+        """
+        This method apply product(carrier) shipping.
+        """
+        Currency = Pool().get('currency.currency')
+
+        with Transaction().set_context(self._get_carrier_context()):
+            shipment_cost, currency_id = self.carrier.get_sale_price()
+
+        shipment_cost = Currency.compute(
+            Currency(currency_id), shipment_cost, self.currency
+        )
+        self.add_shipping_line(shipment_cost, self.carrier.rec_name)
+
     def get_shipping_rates(self, carrier):
         """
         Return list of tuples as:
