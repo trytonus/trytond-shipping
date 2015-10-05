@@ -170,6 +170,13 @@ class Sale:
             ]
         })
 
+    def _get_carrier_context(self):
+        "Pass sale in the context"
+        context = super(Sale, self)._get_carrier_context()
+        context = context.copy()
+        context['sale'] = self.id
+        return context
+
     def apply_product_shipping(self):
         """
         This method apply product(carrier) shipping.
