@@ -299,6 +299,8 @@ class ShippingCarrierSelector(ModelView):
     override_weight = fields.Float("Override Weight", digits=(16,  2))
     no_of_packages = fields.Integer('Number of packages', readonly=True)
 
+    shipping_instructions = fields.Text('Shipping Instructions', readonly=True)
+
 
 class GenerateShippingLabelMessage(ModelView):
     'Generate UPS Labels Message'
@@ -395,7 +397,8 @@ class GenerateShippingLabel(Wizard):
         if shipment.allow_label_generation():
             values = {
                 'shipment': shipment.id,
-                'no_of_packages': len(shipment.packages)
+                'no_of_packages': len(shipment.packages),
+                'shipping_instructions': shipment.shipping_instructions,
             }
 
         if shipment.carrier:

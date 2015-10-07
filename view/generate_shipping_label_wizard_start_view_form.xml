@@ -8,4 +8,7 @@
     <label name="override_weight" />
     <field name="override_weight" />
     <label name="override_weight" string="This weight will be equally distributed among all packages." colspan="2" xalign="0.0" />
+    <newline />
+    <separator name="shipping_instructions" colspan="4"/>
+    <field name="shipping_instructions" colspan="4"/>
 </form>
