@@ -13,5 +13,9 @@
         <page id="packages" string="Packages">
             <field name="root_packages" colspan="4" view_ids="stock_package.package_view_tree"/>
         </page>
+        <page string="Shipping Instructions" id="shipping_instructions">
+            <separator name="shipping_instructions" colspan="4"/>
+            <field name="shipping_instructions"/>
+        </page>
     </xpath>
 </data>

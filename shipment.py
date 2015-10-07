@@ -113,6 +113,12 @@ class ShipmentOut:
     tracking_number = fields.Char(
         'Tracking Number', states=STATES, depends=['state'])
 
+    shipping_instructions = fields.Text(
+        'Shipping Instructions', states={
+            'readonly': Eval('state').in_(['cancel', 'done']),
+        }, depends=['state']
+    )
+
     def get_weight(self, name=None):
         """
         Returns sum of weight associated with each move line
