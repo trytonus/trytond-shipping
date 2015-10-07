@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <form string="Generate Shipment Label" col="2">
     <label name="carrier"/>
-    <field name="carrier"/>
+    <field name="carrier" widget="selection"/>
     <label name="no_of_packages" />
     <field name="no_of_packages" />
     <label name="no_of_packages" string="If the number of packages is zero, a single new package will automatically be created for this shipment." colspan="2" states="{'invisible': Bool(Eval('no_of_packages'))}" xalign="0.0" />
