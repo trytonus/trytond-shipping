@@ -492,6 +492,7 @@ class GenerateShippingLabel(Wizard):
         """
         shipment = self.start.shipment
         shipment.carrier = self.start.carrier
+        shipment.cost_currency = self.start.carrier.currency
 
         return shipment
 
