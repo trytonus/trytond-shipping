@@ -1,5 +1,6 @@
 <data>
     <xpath expr="//field[@name='customer']" position="after">
         <field name="warehouse"/>
+        <field name="carrier" />
     </xpath>
 </data>
