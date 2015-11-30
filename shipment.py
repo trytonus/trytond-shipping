@@ -343,7 +343,7 @@ class GenerateShippingLabel(Wizard):
         'shipping.select_carrier_view_form',
         [
             Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Continue', 'next', 'tryton-go-next'),
+            Button('Continue', 'next', 'tryton-go-next', default=True),
         ]
     )
     next = StateTransition()
@@ -352,7 +352,7 @@ class GenerateShippingLabel(Wizard):
         'shipping.label.no_modules',
         'shipping.no_module_view_form',
         [
-            Button('Ok', 'end', 'tryton-ok')
+            Button('Ok', 'end', 'tryton-ok', default=True)
         ]
     )
 
@@ -360,7 +360,7 @@ class GenerateShippingLabel(Wizard):
         'shipping.label.end',
         'shipping.generate_shipping_label_message_view_form',
         [
-            Button('Ok', 'end', 'tryton-ok'),
+            Button('Ok', 'end', 'tryton-ok', default=True),
         ]
     )
 
@@ -492,6 +492,7 @@ class GenerateShippingLabel(Wizard):
         """
         shipment = self.start.shipment
         shipment.carrier = self.start.carrier
+        shipment.cost_currency = self.start.carrier.currency
 
         return shipment
 

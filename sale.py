@@ -7,6 +7,8 @@ import warnings
 from trytond.model import fields
 from trytond.pool import PoolMeta, Pool
 from trytond.pyson import Eval
+from trytond.transaction import Transaction
+from trytond.exceptions import UserError
 
 __all__ = ['SaleLine', 'Sale']
 __metaclass__ = PoolMeta
@@ -162,10 +164,93 @@ class Sale:
                     'sequence': 9999,  # XXX
                 }]),
                 ('delete', [
-                    line for line in self.lines if line.shipment_cost
+                    line for line in self.lines
+                    if line.shipment_cost is not None
                 ]),
             ]
         })
+
+    def _get_carrier_context(self):
+        "Pass sale in the context"
+        context = super(Sale, self)._get_carrier_context()
+        context = context.copy()
+        context['sale'] = self.id
+        return context
+
+    def apply_product_shipping(self):
+        """
+        This method apply product(carrier) shipping.
+        """
+        Currency = Pool().get('currency.currency')
+
+        with Transaction().set_context(self._get_carrier_context()):
+            shipment_cost, currency_id = self.carrier.get_sale_price()
+
+        shipment_cost = Currency.compute(
+            Currency(currency_id), shipment_cost, self.currency
+        )
+        self.add_shipping_line(shipment_cost, self.carrier.rec_name)
+
+    def get_shipping_rates(self, carrier):
+        """
+        Return list of tuples as:
+            [
+                (
+                    <display method name>, <cost>, <currency>, <metadata>,
+                    <write_vals>
+                )
+                ...
+            ]
+        """
+        Currency = Pool().get('currency.currency')
+
+        if carrier.carrier_cost_method == 'product':
+            with Transaction().set_context(self._get_carrier_context()):
+                cost, currency_id = carrier.get_sale_price()
+            return [(
+                carrier.rec_name,
+                cost,
+                Currency(currency_id),
+                {},
+                {'carrier': carrier.id},
+            )]
+        return []
+
+    @classmethod
+    def get_allowed_carriers_domain(cls):
+        """This method returns domain to seach allowed carriers
+
+        Downstream modules can inherit and update customize this domain.
+        """
+        return []
+
+    def get_all_shipping_rates(self):
+        """
+        Return shipping rates for all allowed carriers
+
+        Return list of tuples as:
+            [
+                (
+                    <display method name>, <rate>, <currency>, <metadata>,
+                    <write_vals>
+                )
+                ...
+            ]
+        """
+        Carrier = Pool().get('carrier')
+
+        carriers = Carrier.search(self.get_allowed_carriers_domain())
+        errors = []
+        rate_list = []
+        for carrier in carriers:
+            try:
+                rate_list += self.get_shipping_rates(carrier=carrier)
+            except UserError, e:
+                # XXX: Collect all errors from shipping carriers
+                errors.append(e.message)
+        if not rate_list and errors:
+            raise self.raise_user_error('\n'.join(errors))
+        return rate_list
 
 
 class SaleLine:
