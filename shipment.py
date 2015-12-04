@@ -228,6 +228,24 @@ class ShipmentOut:
 
         return True
 
+    def _create_default_package(self):
+        """
+        Create a single stock package for the whole shipment
+        """
+        Package = Pool().get('stock.package')
+        ModelData = Pool().get('ir.model.data')
+
+        type_id = ModelData.get_id(
+            "shipping", "shipment_package_type"
+        )
+
+        package, = Package.create([{
+            'shipment': '%s,%d' % (self.__name__, self.id),
+            'type': type_id,
+            'moves': [('add', self.outgoing_moves)],
+        }])
+        return package
+
 
 class StockMove:
     "Stock move"
@@ -421,7 +439,7 @@ class GenerateShippingLabel(Wizard):
         self.start.shipment = shipment
 
         if not shipment.packages:
-            self._create_shipment_package()
+            self.start.shipment._create_default_package()
 
         if self.start.override_weight:
             # Distribute weight equally
@@ -433,25 +451,6 @@ class GenerateShippingLabel(Wizard):
                 package.save()
 
         return 'no_modules'
-
-    def _create_shipment_package(self):
-        """
-        Create a single stock package for the whole shipment
-        """
-        Package = Pool().get('stock.package')
-        ModelData = Pool().get('ir.model.data')
-
-        shipment = self.start.shipment
-        type_id = ModelData.get_id(
-            "shipping", "shipment_package_type"
-        )
-
-        package, = Package.create([{
-            'shipment': '%s,%d' % (shipment.__name__, shipment.id),
-            'type': type_id,
-            'moves': [('add', shipment.outgoing_moves)],
-        }])
-        return package
 
     def default_generate(self, data):
         shipment = self.update_shipment()
