@@ -3,17 +3,17 @@
     shipment.py
 
 """
-from trytond.model import fields, ModelView
+from trytond.model import fields, ModelView, ModelSQL
 from trytond.pool import PoolMeta, Pool
 from trytond.wizard import Wizard, StateView, Button, StateTransition
-from trytond.pyson import Eval, Or
+from trytond.pyson import Eval, Or, Bool, Id
 from trytond.transaction import Transaction
 
 __metaclass__ = PoolMeta
 __all__ = [
     'ShipmentOut', 'StockMove', 'GenerateShippingLabelMessage',
     'GenerateShippingLabel', 'ShippingCarrierSelector',
-    'ShippingLabelNoModules', 'Package'
+    'ShippingLabelNoModules', 'Package', 'ShipmentBoxTypes'
 ]
 
 STATES = {
@@ -511,3 +511,23 @@ class GenerateShippingLabel(Wizard):
             )
 
         return getattr(shipment, method_name)()
+
+
+class ShipmentBoxTypes(ModelSQL, ModelView):
+    "Parcel Box Type"
+    __name__ = 'shipment.box_types'
+
+    carrier = fields.Selection([], 'Carrier', required=True)
+    code = fields.Char('Code', required=True)
+    length = fields.Float('Length')
+    width = fields.Float('Width')
+    height = fields.Float('Height')
+    distance_unit = fields.Many2One(
+        'product.uom', 'Distance Unit', states={
+            'required': Or(Bool(Eval('length')), Bool(
+                Eval('width')), Bool(Eval('height')))
+            },
+        domain=[
+            ('category', '=', Id('product', 'uom_cat_length'))
+        ], depends=['length', 'width', 'height']
+    )
