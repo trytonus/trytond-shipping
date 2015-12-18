@@ -65,5 +65,38 @@
             <field name="inherit" ref="stock_package.package_view_tree"/>
             <field name="name">package_tree</field>
         </record>
+
+        <!-- View for box type -->
+        <record model="ir.ui.view" id="box_type_form">
+              <field name="model">shipment.box_types</field>
+               <field name="type">form</field>
+              <field name="name">box_type_form</field>
+        </record>
+
+        <record model="ir.ui.view" id="box_type_tree">
+            <field name="model">shipment.box_types</field>
+            <field name="type">tree</field>
+            <field name="name">box_type_tree</field>
+        </record>
+
+        <record model="ir.action.act_window" id="act_box_type_form">
+            <field name="name">Shipping Box Type</field>
+            <field name="res_model">shipment.box_types</field>
+        </record>
+
+        <record model="ir.action.act_window.view" id="act_box_type_view1">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="box_type_tree"/>
+            <field name="act_window" ref="act_box_type_form"/>
+        </record>
+
+        <record model="ir.action.act_window.view" id="act_box_type_view2">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="box_type_form"/>
+            <field name="act_window" ref="act_box_type_form"/>
+        </record>
+         
+        <menuitem name="Shipping Box Type" parent="stock.menu_stock"
+            sequence="3" id="menu_box_type_form" action="act_box_type_form"/>       
     </data>
 </tryton>
