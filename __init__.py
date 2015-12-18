@@ -21,6 +21,7 @@ from log import CarrierLog
 
 def register():
     Pool.register(
+        ShipmentBoxTypes,
         PartyConfiguration,
         Carrier,
         CarrierLog,
@@ -35,7 +36,6 @@ def register():
         ShippingCarrierSelector,
         AddressValidationMsg,
         AddressValidationSuggestionView,
-        ShipmentBoxTypes,
         module='shipping', type_='model'
     )
     Pool.register(

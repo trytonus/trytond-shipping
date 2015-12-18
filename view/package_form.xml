@@ -13,6 +13,8 @@
                 <field name="override_weight"/>
                 <label name="tracking_number"/>
                 <field name="tracking_number"/>
+                <label name="box_type"/>
+                <field name="box_type" widget="selection"/>
             </page>
         </notebook>
     </xpath>

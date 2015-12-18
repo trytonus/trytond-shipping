@@ -54,6 +54,8 @@ class Package:
         depends=['weight_digits'],
     )
 
+    box_type = fields.Many2One('shipment.box_types', 'Box Types')
+
     @fields.depends('weight_uom')
     def on_change_with_weight_digits(self, name=None):
         if self.weight_uom:
