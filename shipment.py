@@ -92,6 +92,8 @@ class ShipmentOut:
     "Shipment Out"
     __name__ = 'stock.shipment.out'
 
+    tracking_url = fields.Char('Tracking Url', readonly=True)
+
     is_international_shipping = fields.Function(
         fields.Boolean("Is International Shipping"),
         'on_change_with_is_international_shipping'
