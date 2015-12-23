@@ -13,6 +13,16 @@
                 <field name="override_weight"/>
                 <label name="tracking_number"/>
                 <field name="tracking_number"/>
+            </page>
+            <page id="dimensions" string="Dimensions">
+                <label name="length"/>
+                <field name="length"/>
+                <label name="width"/>
+                <field name="width"/>
+                <label name="height"/>
+                <field name="height"/>
+                <label name="distance_unit"/>
+                <field name="distance_unit"/>
                 <label name="box_type"/>
                 <field name="box_type" widget="selection"/>
             </page>

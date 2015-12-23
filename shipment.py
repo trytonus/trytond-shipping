@@ -56,6 +56,19 @@ class Package:
 
     box_type = fields.Many2One('shipment.box_types', 'Box Types')
 
+    length = fields.Float('Length')
+    width = fields.Float('Width')
+    height = fields.Float('Height')
+    distance_unit = fields.Many2One(
+        'product.uom', 'Distance Unit', states={
+            'required': Or(Bool(Eval('length')), Bool(
+                Eval('width')), Bool(Eval('height')))
+            },
+        domain=[
+            ('category', '=', Id('product', 'uom_cat_length'))
+        ], depends=['length', 'width', 'height']
+    )
+
     @fields.depends('weight_uom')
     def on_change_with_weight_digits(self, name=None):
         if self.weight_uom:
