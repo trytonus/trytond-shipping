@@ -100,6 +100,13 @@ class Package:
         )
         return weight
 
+    @staticmethod
+    def default_type():
+        ModelData = Pool().get('ir.model.data')
+        return ModelData.get_id(
+            'shipping', 'shipment_package_type'
+        )
+
 
 class ShipmentOut:
     "Shipment Out"
