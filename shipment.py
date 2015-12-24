@@ -542,7 +542,7 @@ class ShipmentBoxTypes(ModelSQL, ModelView):
     "Parcel Box Type"
     __name__ = 'shipment.box_types'
 
-    carrier = fields.Selection([], 'Carrier', required=True)
+    provider = fields.Selection([], 'Provider', required=True)
     code = fields.Char('Code', required=True)
     length = fields.Float('Length')
     width = fields.Float('Width')
@@ -551,7 +551,7 @@ class ShipmentBoxTypes(ModelSQL, ModelView):
         'product.uom', 'Distance Unit', states={
             'required': Or(Bool(Eval('length')), Bool(
                 Eval('width')), Bool(Eval('height')))
-            },
+        },
         domain=[
             ('category', '=', Id('product', 'uom_cat_length'))
         ], depends=['length', 'width', 'height']
@@ -574,7 +574,7 @@ class ShipmentBoxTypes(ModelSQL, ModelView):
         Returns rec name for Box Type
         """
         new_rec_name = ' - '.join(
-            [self.carrier, ' '.join(self.code.split('_'))]
+            [self.provider, ' '.join(self.code.split('_'))]
         )
 
         if not (self.length and self.width and self.height):
