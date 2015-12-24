@@ -713,6 +713,138 @@ class TestShipping(unittest.TestCase):
 
                 self.assertFalse(shipment2.tracking_number)
 
+    def test_0050_check_package_weight_redistribution(self):
+        """
+        Tests package weight redistribution in wizard.
+        """
+        with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.setup_defaults()
+
+            with Transaction().set_context(company=self.company.id):
+                sale, = self.Sale.create([{
+                    'reference': 'S-1001',
+                    'payment_term': self.payment_term.id,
+                    'party': self.sale_party.id,
+                    'invoice_address': self.sale_party.addresses[0].id,
+                    'shipment_address': self.sale_party.addresses[0].id,
+                    'carrier': self.carrier,
+                }])
+
+                product_1 = self.create_product(3, self.uom_kg)
+                product_2 = self.create_product(7, self.uom_kg)
+
+                sale_line1, = self.SaleLine.create([{
+                    'sale': sale.id,
+                    'type': 'line',
+                    'quantity': 1,
+                    'product': product_2,
+                    'unit_price': Decimal('10.00'),
+                    'description': 'Test Description1',
+                    'unit': product_1.template.default_uom,
+                }])
+                sale_line2, = self.SaleLine.create([{
+                    'sale': sale.id,
+                    'type': 'line',
+                    'quantity': 1,
+                    'product': product_1,
+                    'unit_price': Decimal('10.00'),
+                    'description': 'Test Description1',
+                    'unit': product_2.template.default_uom,
+                }])
+
+                self.assertEqual(sale.total_weight, 22.04)
+                self.assertEqual(sale.weight_uom.name, 'Pound')
+
+                self.Sale.quote([sale])
+                self.Sale.confirm([sale])
+                self.Sale.process([sale])
+
+                self.assertEqual(len(sale.shipments), 1)
+
+                self.Shipment.assign(sale.shipments)
+
+                self.assertFalse(sale.shipments[0].is_international_shipping)
+
+            self.Shipment.pack(sale.shipments)
+            shipment, = sale.shipments
+
+            # Create packages for shipment products
+            package_type, = self.PackageType.search(
+                [('name', '=', 'Shipment Package')])
+            package1, package2 = self.Package.create([{
+                'shipment': '%s,%d' % (shipment.__name__, shipment.id),
+                'type': package_type.id,
+                'moves': [('add', [shipment.outgoing_moves[0]])],
+                'override_weight': 3,
+            }, {
+                'shipment': '%s,%d' % (shipment.__name__, shipment.id),
+                'type': package_type.id,
+                'moves': [('add', [shipment.outgoing_moves[1]])],
+                'override_weight': 4,
+            }])
+
+            # Check weight of packages before execution
+            # of wizard.
+            self.assertEqual(package1.override_weight, 3.0)
+            self.assertEqual(package2.override_weight, 4.0)
+
+            # Also check total weight of shipment which must be sum
+            # of weight of both packages. 3 + 7 =10 kg = 22.04 Pounds
+            self.assertEqual(shipment.weight, 22.04)
+
+            # CASE 1: default override_weight = override_weight of wizard
+            with Transaction().set_context(
+                    active_id=sale.shipments[0], company=self.company.id
+            ):
+                session_id, start_state, end_state = self.LabelWizard.create()
+
+                data = {
+                    start_state: {
+                        'carrier': self.carrier,
+                        'shipment': sale.shipments[0],
+                        'override_weight': 7.0,
+                    },
+                }
+
+                self.LabelWizard.execute(
+                    session_id, data, 'next'
+                )
+                # Test if a package was created for shipment
+                self.assertTrue(shipment.packages)
+                self.assertEqual(len(shipment.packages), 2)
+
+                # As total override weight is same as override weight of
+                # wizard, both package weight should be same as before
+                self.assertEqual(package1.override_weight, 3)
+                self.assertEqual(package2.override_weight, 4)
+
+            # CASE 2: default override_weight != override_weight of wizard
+            with Transaction().set_context(
+                    active_id=sale.shipments[0], company=self.company.id
+            ):
+                session_id, start_state, end_state = self.LabelWizard.create()
+
+                data = {
+                    start_state: {
+                        'carrier': self.carrier,
+                        'shipment': sale.shipments[0],
+                        'override_weight': 8.0,
+                    },
+                }
+
+                self.LabelWizard.execute(
+                    session_id, data, 'next'
+                )
+                # Test if a package was created for shipment
+                self.assertTrue(shipment.packages)
+                self.assertEqual(len(shipment.packages), 2)
+
+                # As override weight is different from wizard's
+                # override weight, it will be redistributed
+                # equally
+                self.assertEqual(package1.override_weight, 4.0)
+                self.assertEqual(package2.override_weight, 4.0)
+
 
 def suite():
     """
