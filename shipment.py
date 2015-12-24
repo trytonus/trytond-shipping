@@ -557,6 +557,18 @@ class ShipmentBoxTypes(ModelSQL, ModelView):
         ], depends=['length', 'width', 'height']
     )
 
+    @classmethod
+    def __setup__(cls):
+        super(ShipmentBoxTypes, cls).__setup__()
+
+        cls._sql_constraints += [
+            (
+                'code_unique',
+                'UNIQUE(code)',
+                'Box Type with this code already exists.'
+            )
+        ]
+
     def get_rec_name(self, name):
         """
         Returns rec name for Box Type
