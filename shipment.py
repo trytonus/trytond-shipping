@@ -107,6 +107,13 @@ class Package:
             'shipping', 'shipment_package_type'
         )
 
+    @staticmethod
+    def default_distance_unit():
+        ModelData = Pool().get('ir.model.data')
+        return ModelData.get_id(
+            'product', 'uom_inch'
+        )
+
 
 class ShipmentOut:
     "Shipment Out"
