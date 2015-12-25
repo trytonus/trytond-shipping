@@ -2,8 +2,8 @@
 <form string="Shipping Box Type">
     <label name="code"/>
     <field name="code"/>
-    <label name="carrier"/>
-    <field name="carrier"/>
+    <label name="provider"/>
+    <field name="provider"/>
     <separator string="Dimensions" id="dimensions" colspan="4" />
     <label name="length"/>
     <field name="length"/>
