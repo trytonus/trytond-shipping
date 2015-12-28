@@ -845,6 +845,25 @@ class TestShipping(unittest.TestCase):
                 self.assertEqual(package1.override_weight, 4.0)
                 self.assertEqual(package2.override_weight, 4.0)
 
+            # CASE 3: override_weight in wizard is None
+            with Transaction().set_context(
+                    active_id=sale.shipments[0], company=self.company.id
+            ):
+                session_id, start_state, end_state = self.LabelWizard.create()
+
+                data = {
+                    start_state: {
+                        'carrier': self.carrier,
+                        'shipment': sale.shipments[0],
+                        'override_weight': None,
+                    },
+                }
+
+                # As override weight in wizard is None, it shouldn't continue
+                self.LabelWizard.execute(
+                    session_id, data, 'next'
+                )
+
 
 def suite():
     """
