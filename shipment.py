@@ -473,7 +473,8 @@ class GenerateShippingLabel(Wizard):
             self.start.shipment._create_default_package()
 
         default_values = self.default_start({})
-        if default_values['override_weight'] != self.start.override_weight:
+        if self.start.override_weight and \
+                default_values['override_weight'] != self.start.override_weight:
             # Distribute weight equally
             per_package_weight = (
                 self.start.override_weight / len(shipment.packages)
