@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<form string="Tracking Numbers">
+    <label name="origin"/>
+    <field name="origin"/>
+    <group id="checkboxes" col="4" colspan="2">
+        <label name="active"/>
+        <field name="active"/>
+        <label name="is_master"/>
+        <field name="is_master"/>
+    </group>
+    <label name="tracking_number"/>
+    <field name="tracking_number"/>
+    <label name="carrier"/>
+    <field name="carrier"/>
+    <label name="tracking_url"/>
+    <field name="tracking_url" colspan="3"/>
+</form>

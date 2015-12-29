@@ -13,7 +13,8 @@ __metaclass__ = PoolMeta
 __all__ = [
     'ShipmentOut', 'StockMove', 'GenerateShippingLabelMessage',
     'GenerateShippingLabel', 'ShippingCarrierSelector',
-    'ShippingLabelNoModules', 'Package', 'ShipmentBoxTypes'
+    'ShippingLabelNoModules', 'Package', 'ShipmentBoxTypes',
+    'ShipmentTracking'
 ]
 
 STATES = {
@@ -24,7 +25,10 @@ STATES = {
 class Package:
     __name__ = 'stock.package'
 
-    tracking_number = fields.Char('Tracking Number')
+    tracking_number = fields.Function(
+        fields.Many2One('shipment.tracking', 'Tracking Number'),
+        'get_tracking_number'
+    )
 
     weight = fields.Function(
         fields.Float(
@@ -63,11 +67,23 @@ class Package:
         'product.uom', 'Distance Unit', states={
             'required': Or(Bool(Eval('length')), Bool(
                 Eval('width')), Bool(Eval('height')))
-            },
+        },
         domain=[
             ('category', '=', Id('product', 'uom_cat_length'))
         ], depends=['length', 'width', 'height']
     )
+
+    def get_tracking_number(self, name):
+        """
+        Return first tracking number for this package
+        """
+        Tracking = Pool().get('shipment.tracking')
+
+        tracking_numbers = Tracking.search([
+            ('origin', '=', '%s,%s' % (self.__name__, self.id)),
+        ], limit=1)
+
+        return tracking_numbers and tracking_numbers[0].id or None
 
     @fields.depends('weight_uom')
     def on_change_with_weight_digits(self, name=None):
@@ -141,14 +157,34 @@ class ShipmentOut:
         fields.Integer('Weight Digits'), 'on_change_with_weight_digits'
     )
 
-    tracking_number = fields.Char(
-        'Tracking Number', states=STATES, depends=['state'])
+    tracking_number = fields.Function(
+        fields.Many2One('shipment.tracking', 'Tracking Number'),
+        'get_tracking_number'
+    )
 
     shipping_instructions = fields.Text(
         'Shipping Instructions', states={
             'readonly': Eval('state').in_(['cancel', 'done']),
         }, depends=['state']
     )
+
+    def get_tracking_number(self, name):
+        """
+        Returns master tracking number from package
+        """
+        Tracking = Pool().get('shipment.tracking')
+
+        if not self.packages:
+            return
+
+        tracking_numbers = Tracking.search([
+            ('origin', 'in', [
+                '%s,%d' % (p.__name__, p.id) for p in self.packages
+            ]),
+            ('is_master', '=', True)
+        ], limit=1)
+
+        return tracking_numbers and tracking_numbers[0].id or None
 
     def get_weight(self, name=None):
         """
@@ -594,3 +630,37 @@ class ShipmentBoxTypes(ModelSQL, ModelView):
         return ' - '.join(
             [new_rec_name, ' '.join([dimensions, self.distance_unit.symbol])]
         )
+
+
+class ShipmentTracking(ModelSQL, ModelView):
+    """Shipment Tracking
+    """
+    __name__ = 'shipment.tracking'
+    _rec_name = 'tracking_number'
+
+    active = fields.Boolean("Active", readonly=True, select=True)
+    is_master = fields.Boolean("Is Master ?", readonly=True, select=True)
+    origin = fields.Reference(
+        'Origin', selection='get_origin', select=True,
+    )
+    tracking_number = fields.Char("Tracking Number", required=True, select=True)
+    carrier = fields.Many2One('carrier', 'Carrier', required=True)
+    tracking_url = fields.Char("Tracking Url", readonly=True)
+
+    @staticmethod
+    def default_active():
+        return True
+
+    @classmethod
+    def _get_origin(cls):
+        'Return list of Model names for origin Reference'
+        return ['stock.shipment.out', 'stock.package']
+
+    @classmethod
+    def get_origin(cls):
+        Model = Pool().get('ir.model')
+        models = cls._get_origin()
+        models = Model.search([
+            ('model', 'in', models),
+        ])
+        return [(None, '')] + [(m.model, m.name) for m in models]

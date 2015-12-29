@@ -17,6 +17,10 @@ class Carrier:
 
     currency = fields.Many2One('currency.currency', 'Currency', required=True)
 
+    tracking_numbers = fields.One2Many(
+        "shipment.tracking", "carrier", "Tracking Numbers", readonly=True
+    )
+
     @staticmethod
     def default_currency():
         Company = Pool().get('company.company')

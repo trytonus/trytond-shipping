@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+
+<tree string="Tracking Numbers">
+    <field name="active"/>
+    <field name="is_master"/>
+    <field name="tracking_number"/>
+    <field name="carrier"/>
+</tree>
