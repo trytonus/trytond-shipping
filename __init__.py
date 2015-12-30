@@ -12,7 +12,8 @@ from party import (
 )
 from shipment import (
     ShipmentOut, StockMove, GenerateShippingLabelMessage, GenerateShippingLabel,
-    ShippingCarrierSelector, ShippingLabelNoModules, Package, ShipmentBoxTypes
+    ShippingCarrierSelector, ShippingLabelNoModules, Package, ShipmentBoxTypes,
+    ShipmentTracking
 )
 from sale import Sale, SaleLine, ReturnSale
 from configuration import PartyConfiguration
@@ -36,6 +37,7 @@ def register():
         ShippingCarrierSelector,
         AddressValidationMsg,
         AddressValidationSuggestionView,
+        ShipmentTracking,
         module='shipping', type_='model'
     )
     Pool.register(
