@@ -638,18 +638,38 @@ class ShipmentTracking(ModelSQL, ModelView):
     __name__ = 'shipment.tracking'
     _rec_name = 'tracking_number'
 
-    active = fields.Boolean("Active", readonly=True, select=True)
+    is_cancelled = fields.Boolean("Is Cancelled", readonly=True, select=True)
     is_master = fields.Boolean("Is Master ?", readonly=True, select=True)
     origin = fields.Reference(
-        'Origin', selection='get_origin', select=True,
+        'Origin', selection='get_origin', select=True, readonly=True
     )
-    tracking_number = fields.Char("Tracking Number", required=True, select=True)
-    carrier = fields.Many2One('carrier', 'Carrier', required=True)
+    tracking_number = fields.Char(
+        "Tracking Number", required=True, select=True, readonly=True
+    )
+    carrier = fields.Many2One(
+        'carrier', 'Carrier', required=True, readonly=True
+    )
     tracking_url = fields.Char("Tracking Url", readonly=True)
 
-    @staticmethod
-    def default_active():
-        return True
+    @classmethod
+    def __setup__(cls):
+        """
+        Setup the class before adding to pool
+        """
+        super(ShipmentTracking, cls).__setup__()
+        cls._buttons.update({
+            'cancel_tracking_number_button': {},
+        })
+
+    @classmethod
+    @ModelView.button
+    def cancel_tracking_number_button(cls, tracking_numbers):
+        """
+        Cancel tracking numbers
+        """
+        cls.write(list(tracking_numbers), {
+            'is_cancelled': True
+        })
 
     @classmethod
     def _get_origin(cls):

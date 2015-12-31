@@ -4,8 +4,8 @@
     <label name="origin"/>
     <field name="origin"/>
     <group id="checkboxes" col="4" colspan="2">
-        <label name="active"/>
-        <field name="active"/>
+        <label name="is_cancelled"/>
+        <field name="is_cancelled"/>
         <label name="is_master"/>
         <field name="is_master"/>
     </group>
@@ -15,4 +15,5 @@
     <field name="carrier"/>
     <label name="tracking_url"/>
     <field name="tracking_url" colspan="3"/>
+    <button name="cancel_tracking_number_button" string="Cancel Tracking Number" colspan="4"/>
 </form>
