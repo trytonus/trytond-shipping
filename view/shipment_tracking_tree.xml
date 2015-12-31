@@ -1,8 +1,9 @@
 <?xml version="1.0"?>
 
-<tree string="Tracking Numbers">
-    <field name="active"/>
+<tree string="Tracking Numbers" colors="If(~Bool(Eval('is_cancelled')), 'black', 'grey')">
+    <field name="is_cancelled"/>
     <field name="is_master"/>
     <field name="tracking_number"/>
     <field name="carrier"/>
+    <button name="cancel_tracking_number_button" string="Cancel Tracking Number"/>
 </tree>
