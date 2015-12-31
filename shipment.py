@@ -658,7 +658,9 @@ class ShipmentTracking(ModelSQL, ModelView):
         """
         super(ShipmentTracking, cls).__setup__()
         cls._buttons.update({
-            'cancel_tracking_number_button': {},
+            'cancel_tracking_number_button': {
+                'invisible': Bool(Eval('is_cancelled'))
+            },
         })
 
     @classmethod
