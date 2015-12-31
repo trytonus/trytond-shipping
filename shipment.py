@@ -81,6 +81,7 @@ class Package:
 
         tracking_numbers = Tracking.search([
             ('origin', '=', '%s,%s' % (self.__name__, self.id)),
+            ('is_cancelled', '=', False)
         ], limit=1)
 
         return tracking_numbers and tracking_numbers[0].id or None
@@ -181,7 +182,8 @@ class ShipmentOut:
             ('origin', 'in', [
                 '%s,%d' % (p.__name__, p.id) for p in self.packages
             ]),
-            ('is_master', '=', True)
+            ('is_master', '=', True),
+            ('is_cancelled', '=', False),
         ], limit=1)
 
         return tracking_numbers and tracking_numbers[0].id or None
@@ -658,7 +660,9 @@ class ShipmentTracking(ModelSQL, ModelView):
         """
         super(ShipmentTracking, cls).__setup__()
         cls._buttons.update({
-            'cancel_tracking_number_button': {},
+            'cancel_tracking_number_button': {
+                'invisible': Bool(Eval('is_cancelled'))
+            },
         })
 
     @classmethod
