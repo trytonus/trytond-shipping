@@ -27,7 +27,7 @@ class Package:
 
     tracking_number = fields.Function(
         fields.Many2One('shipment.tracking', 'Tracking Number'),
-        'get_tracking_number'
+        'get_tracking_number', searcher="search_tracking_number"
     )
 
     weight = fields.Function(
@@ -85,6 +85,19 @@ class Package:
         ], limit=1)
 
         return tracking_numbers and tracking_numbers[0].id or None
+
+    @classmethod
+    def search_tracking_number(cls, name, clause):
+        Tracking = Pool().get('shipment.tracking')
+
+        tracking_numbers = Tracking.search([
+            ('origin', 'like', 'stock.package,%'),
+            ('is_cancelled', '=', False),
+            ('tracking_number', ) + tuple(clause[1:])
+        ])
+        return [
+            ('id', 'in', map(lambda x: x.origin.id, tracking_numbers))
+        ]
 
     @fields.depends('weight_uom')
     def on_change_with_weight_digits(self, name=None):
@@ -160,7 +173,7 @@ class ShipmentOut:
 
     tracking_number = fields.Function(
         fields.Many2One('shipment.tracking', 'Tracking Number'),
-        'get_tracking_number'
+        'get_tracking_number', searcher="search_tracking_number"
     )
 
     shipping_instructions = fields.Text(
@@ -187,6 +200,20 @@ class ShipmentOut:
         ], limit=1)
 
         return tracking_numbers and tracking_numbers[0].id or None
+
+    @classmethod
+    def search_tracking_number(cls, name, clause):
+        Tracking = Pool().get('shipment.tracking')
+
+        tracking_numbers = Tracking.search([
+            ('origin', 'like', 'stock.package,%'),
+            ('is_cancelled', '=', False),
+            ('is_master', '=', True),
+            ('tracking_number', ) + tuple(clause[1:])
+        ])
+        return [
+            ('id', 'in', set(map(lambda x: x.origin.shipment.id, tracking_numbers)))  # noqa
+        ]
 
     def get_weight(self, name=None):
         """

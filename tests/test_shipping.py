@@ -923,6 +923,15 @@ class TestShipping(unittest.TestCase):
                     package1.tracking_number, shipment.tracking_number
                 )
 
+                self.assertEqual(
+                    self.Package.search([('tracking_number', '=', 'AA1234')]),
+                    [package1, package2]
+                )
+                self.assertEqual(
+                    self.Shipment.search([('tracking_number', '=', 'AA1234')]),
+                    [shipment]
+                )
+
 
 def suite():
     """
