@@ -81,7 +81,6 @@ class Package:
 
         tracking_numbers = Tracking.search([
             ('origin', '=', '%s,%s' % (self.__name__, self.id)),
-            ('is_cancelled', '=', False)
         ], limit=1)
 
         return tracking_numbers and tracking_numbers[0].id or None
@@ -92,7 +91,6 @@ class Package:
 
         tracking_numbers = Tracking.search([
             ('origin', 'like', 'stock.package,%'),
-            ('is_cancelled', '=', False),
             ('tracking_number', ) + tuple(clause[1:])
         ])
         return [
@@ -196,7 +194,6 @@ class ShipmentOut:
                 '%s,%d' % (p.__name__, p.id) for p in self.packages
             ]),
             ('is_master', '=', True),
-            ('is_cancelled', '=', False),
         ], limit=1)
 
         return tracking_numbers and tracking_numbers[0].id or None
@@ -207,7 +204,6 @@ class ShipmentOut:
 
         tracking_numbers = Tracking.search([
             ('origin', 'like', 'stock.package,%'),
-            ('is_cancelled', '=', False),
             ('is_master', '=', True),
             ('tracking_number', ) + tuple(clause[1:])
         ])
@@ -667,7 +663,6 @@ class ShipmentTracking(ModelSQL, ModelView):
     __name__ = 'shipment.tracking'
     _rec_name = 'tracking_number'
 
-    is_cancelled = fields.Boolean("Is Cancelled", readonly=True, select=True)
     is_master = fields.Boolean("Is Master ?", readonly=True, select=True)
     origin = fields.Reference(
         'Origin', selection='get_origin', select=True, readonly=True
@@ -679,6 +674,19 @@ class ShipmentTracking(ModelSQL, ModelView):
         'carrier', 'Carrier', required=True, readonly=True
     )
     tracking_url = fields.Char("Tracking Url", readonly=True)
+    state = fields.Selection([
+        ('waiting', 'Waiting'),
+        ('in_transit', 'In Transit'),
+        ('delivered', 'Delivered'),
+        ('failure', 'Failure'),
+        ('returned', 'Returned'),
+        ('cancelled', 'Cancelled'),
+        ('pending_cancellation', 'Pending Cancellation'),
+        ], 'State', required=True, select=True)
+
+    @staticmethod
+    def default_state():
+        return 'waiting'
 
     @classmethod
     def __setup__(cls):
@@ -688,7 +696,7 @@ class ShipmentTracking(ModelSQL, ModelView):
         super(ShipmentTracking, cls).__setup__()
         cls._buttons.update({
             'cancel_tracking_number_button': {
-                'invisible': Bool(Eval('is_cancelled'))
+                'invisible': Eval('state') == 'cancelled',
             },
         })
 
@@ -699,8 +707,16 @@ class ShipmentTracking(ModelSQL, ModelView):
         Cancel tracking numbers
         """
         cls.write(list(tracking_numbers), {
-            'is_cancelled': True
+            'state': 'cancelled'
         })
+
+    @classmethod
+    def refresh_shippo_status(cls, tracking_numbers):
+        """
+        Downstream implementation of
+        ShipmentTracking.refresh_shippo_status
+        """
+        pass
 
     @classmethod
     def _get_origin(cls):
