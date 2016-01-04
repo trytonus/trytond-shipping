@@ -611,6 +611,7 @@ class ShipmentBoxTypes(ModelSQL, ModelView):
     "Parcel Box Type"
     __name__ = 'shipment.box_types'
 
+    name = fields.Char('Name', required=True)
     provider = fields.Selection([], 'Provider', required=True)
     code = fields.Char('Code', required=True)
     length = fields.Float('Length')
@@ -637,24 +638,6 @@ class ShipmentBoxTypes(ModelSQL, ModelView):
                 'Box Type with this code already exists.'
             )
         ]
-
-    def get_rec_name(self, name):
-        """
-        Returns rec name for Box Type
-        """
-        new_rec_name = ' - '.join(
-            [self.provider, ' '.join(self.code.split('_'))]
-        )
-
-        if not (self.length and self.width and self.height):
-            return new_rec_name
-
-        dimensions = ' x '.join(
-            map(str, [self.length, self.width, self.height])
-        )
-        return ' - '.join(
-            [new_rec_name, ' '.join([dimensions, self.distance_unit.symbol])]
-        )
 
 
 class ShipmentTracking(ModelSQL, ModelView):
