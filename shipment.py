@@ -239,7 +239,7 @@ class ShipmentOut:
             'label_wizard': {
                 'invisible': Or(
                     (~Eval('state').in_(['packed', 'done'])),
-                    (Eval('tracking_number') != '')
+                    (Bool(Eval('tracking_number')))
                 ),
                 'icon': 'tryton-executable',
             },
