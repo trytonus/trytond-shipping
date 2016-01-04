@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <tree string="Shipping Box Type">
+    <field name="name"/>
     <field name="code"/>
     <field name="provider"/>
     <field name="distance_unit"/>

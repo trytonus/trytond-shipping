@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 <form string="Shipping Box Type">
+    <label name="name"/>
+    <field name="name"/>
     <label name="code"/>
     <field name="code"/>
     <label name="provider"/>
