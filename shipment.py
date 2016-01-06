@@ -612,7 +612,7 @@ class ShipmentBoxTypes(ModelSQL, ModelView):
     __name__ = 'shipment.box_types'
 
     name = fields.Char('Name', required=True)
-    provider = fields.Selection([], 'Provider', required=True)
+    provider = fields.Selection([(None, '')], 'Provider')
     code = fields.Char('Code', required=True)
     length = fields.Float('Length')
     width = fields.Float('Width')
