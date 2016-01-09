@@ -15,5 +15,6 @@
     <field name="tracking_url" colspan="3"/>
     <label name="state"/>
     <field name="state"/>
+    <button name="refresh_status_button" string="Refresh Status" colspan="4"/>
     <button name="cancel_tracking_number_button" string="Cancel Tracking Number" colspan="4"/>
 </form>

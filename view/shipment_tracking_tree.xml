@@ -1,9 +1,10 @@
 <?xml version="1.0"?>
 
 <tree string="Tracking Numbers">
-    <field name="state"/>
     <field name="is_master"/>
     <field name="tracking_number"/>
     <field name="carrier"/>
+    <field name="state"/>
+    <button name="refresh_shippo_status_button" string="Refresh Status"/>
     <button name="cancel_tracking_number_button" string="Cancel Tracking Number"/>
 </tree>

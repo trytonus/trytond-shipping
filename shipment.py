@@ -683,23 +683,53 @@ class ShipmentTracking(ModelSQL, ModelView):
             },
         })
 
+    def cancel_tracking_number(self):
+        "Cancel tracking number"
+        self.state = 'cancelled'
+        self.save()
+
     @classmethod
     @ModelView.button
     def cancel_tracking_number_button(cls, tracking_numbers):
         """
         Cancel tracking numbers
         """
-        cls.write(list(tracking_numbers), {
-            'state': 'cancelled'
-        })
+        for tracking_number in tracking_numbers:
+            tracking_number.cancel_tracking_number()
 
-    @classmethod
-    def refresh_shippo_status(cls, tracking_numbers):
+    def refresh_status(self):
         """
-        Downstream implementation of
-        ShipmentTracking.refresh_shippo_status
+        Downstream module can implement this
         """
         pass
+
+    @classmethod
+    @ModelView.button
+    def refresh_status_button(cls, tracking_numbers):
+        """
+        Update tracking numbers state
+        """
+        for tracking_number in tracking_numbers:
+            tracking_number.refresh_status()
+
+    @classmethod
+    def refresh_tracking_numbers_cron(cls):
+        """
+        This is a cron method, responsible for updating state of
+        shipments.
+        """
+        states_to_refresh = [
+            'pending_cancellation',
+            'failure',
+            'waiting',
+            'in_transit',
+        ]
+
+        tracking_numbers = cls.search([
+            ('state', 'in', states_to_refresh),
+        ])
+        for tracking_number in tracking_numbers:
+            tracking_number.refresh_status()
 
     @classmethod
     def _get_origin(cls):
