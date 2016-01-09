@@ -3,6 +3,10 @@
         <label name="currency"/>
         <field name="currency"/>
         <newline/>
-        <field name="tracking_numbers" colspan="4"/>
+        <notebook colspan="4">
+            <page id="tracking_numbers" string="Tracking Numbers">
+                <field name="tracking_numbers" colspan="4"/>
+            </page>
+        </notebook>
     </xpath>
 </data>
