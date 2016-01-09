@@ -111,5 +111,19 @@
             <field name="name">shipment_tracking_tree</field>
         </record>
 
+        <!--Cron To refresh state of tracking numbers-->
+        <record model="ir.cron" id="cron_refresh_tracking_numbers">
+            <field name="name">Refresh Tracking Numbers</field>
+            <field name="request_user" ref="res.user_admin"/>
+            <field name="user" ref="res.user_trigger"/>
+            <field name="active" eval="True"/>
+            <field name="interval_number">3</field>
+            <field name="interval_type">hours</field>
+            <field name="number_calls">-1</field>
+            <field name="repeat_missed" eval="False"/>
+            <field name="model">shipment.tracking</field>
+            <field name="function">refresh_tracking_numbers_cron</field>
+        </record>
+
     </data>
 </tryton>
