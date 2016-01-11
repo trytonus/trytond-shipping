@@ -125,5 +125,51 @@
             <field name="function">refresh_tracking_numbers_cron</field>
         </record>
 
+        <!-- Carrier Service -->
+        <record model="ir.ui.view" id="carrier_service_view_form">
+            <field name="model">carrier.service</field>
+            <field name="type">form</field>
+            <field name="name">carrier_service_view_form</field>
+        </record>
+
+        <record model="ir.ui.view" id="carrier_service_view_tree">
+            <field name="model">carrier.service</field>
+            <field name="type">tree</field>
+            <field name="name">carrier_service_view_tree</field>
+        </record>
+
+        <record model="ir.action.act_window" id="act_carrier_service">
+            <field name="name">Carrier Service</field>
+            <field name="res_model">carrier.service</field>
+        </record>
+
+        <record model="ir.action.act_window.view" id="act_carrier_service_view1">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="carrier_service_view_tree"/>
+            <field name="act_window" ref="act_carrier_service"/>
+        </record>
+
+        <record model="ir.action.act_window.view" id="act_carrier_service_view2">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="carrier_service_view_form"/>
+            <field name="act_window" ref="act_carrier_service"/>
+        </record>
+         
+        <menuitem name="Shipping Carrier Services" parent="stock.menu_stock"
+            sequence="4" id="carrier_service" action="act_carrier_service"/>
+
+        <record model="ir.action.act_window.domain" id="act_service_form_domain_active">
+            <field name="name">Active</field>
+            <field name="sequence" eval="10"/>
+            <field name="domain">[('active', '=', True)]</field>
+            <field name="act_window" ref="act_carrier_service"/>
+        </record>
+
+        <record model="ir.action.act_window.domain" id="act_service_form_domain_non_active">
+            <field name="name">Disabled</field>
+            <field name="sequence" eval="10"/>
+            <field name="domain">[('active', '=', False)]</field>
+            <field name="act_window" ref="act_carrier_service"/>
+        </record>
     </data>
 </tryton>
