@@ -553,7 +553,7 @@ class GenerateShippingLabel(Wizard):
         tracking_number = self.generate_label(shipment)
 
         values = {
-            'tracking_number': tracking_number,
+            'tracking_number': tracking_number.tracking_number,
             'message': self._get_message(),
             'attachments': self.get_attachments(),
             'cost': shipment.cost,
