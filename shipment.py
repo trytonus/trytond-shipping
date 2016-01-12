@@ -14,7 +14,7 @@ __all__ = [
     'ShipmentOut', 'StockMove', 'GenerateShippingLabelMessage',
     'GenerateShippingLabel', 'ShippingCarrierSelector',
     'ShippingLabelNoModules', 'Package', 'ShipmentBoxTypes',
-    'ShipmentTracking'
+    'ShipmentTracking', 'CarrierService'
 ]
 
 STATES = {
@@ -744,3 +744,38 @@ class ShipmentTracking(ModelSQL, ModelView):
             ('model', 'in', models),
         ])
         return [(None, '')] + [(m.model, m.name) for m in models]
+
+
+class CarrierService(ModelSQL, ModelView):
+    "Carrier Services"
+    __name__ = 'carrier.service'
+
+    active = fields.Boolean("Active", select=True)
+    provider = fields.Selection([], "Provider", required=True, select=True)
+    name = fields.Char("Name", required=True, select=True)
+    code = fields.Char("Code", required=True, select=True)
+    box_types = fields.Function(
+        fields.One2Many('shipment.box_types', None, "Box Types"),
+        'get_box_types'
+    )
+
+    def get_box_types(self, name):
+        BoxTypes = Pool().get('shipment.box_types')
+
+        return map(int, BoxTypes.search([('provider', '=', self.provider)]))
+
+    @classmethod
+    def __setup__(cls):
+        super(CarrierService, cls).__setup__()
+
+        cls._sql_constraints += [
+            (
+                'provider_service_name_unique',
+                'UNIQUE(provider, name)',
+                'Service name is already in use for this carrier'
+            )
+        ]
+
+    @staticmethod
+    def default_active():
+        return True

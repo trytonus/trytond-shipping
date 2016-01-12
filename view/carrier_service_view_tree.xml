@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+
+<tree string="Carrier Services">
+    <field name="provider"/>
+    <field name="name"/>
+    <field name="active"/>
+</tree>
