@@ -4,8 +4,8 @@
     <field name="name"/>
     <label name="code"/>
     <field name="code"/>
-    <label name="provider"/>
-    <field name="provider"/>
+    <label name="carrier_cost_method"/>
+    <field name="carrier_cost_method"/>
     <separator string="Dimensions" id="dimensions" colspan="4" />
     <label name="length"/>
     <field name="length"/>

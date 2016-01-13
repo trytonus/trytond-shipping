@@ -8,4 +8,8 @@
             <field name="weight_uom"/>
         </page>
     </xpath>
+    <xpath expr="//field[@name='carrier']" position="after">
+        <label name="carrier_service"/>
+        <field name="carrier_service"/>
+    </xpath>
 </data>
