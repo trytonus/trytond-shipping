@@ -46,6 +46,8 @@ class Sale:
         fields.Integer('Weight Digits'), 'on_change_with_weight_digits'
     )
 
+    carrier_service = fields.Many2One("carrier.service", "Carrier Service")
+
     @classmethod
     def __setup__(cls):
         super(Sale, cls).__setup__()

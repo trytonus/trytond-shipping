@@ -180,6 +180,8 @@ class ShipmentOut:
         }, depends=['state']
     )
 
+    carrier_service = fields.Many2One("carrier.service", "Carrier Service")
+
     def get_tracking_number(self, name):
         """
         Returns master tracking number from package

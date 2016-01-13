@@ -26,6 +26,7 @@ def register():
         PartyConfiguration,
         Carrier,
         CarrierLog,
+        CarrierService,
         Address,
         ShipmentOut,
         StockMove,
@@ -38,7 +39,6 @@ def register():
         AddressValidationMsg,
         AddressValidationSuggestionView,
         ShipmentTracking,
-        CarrierService,
         module='shipping', type_='model'
     )
     Pool.register(
