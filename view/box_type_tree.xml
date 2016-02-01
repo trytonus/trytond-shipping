@@ -2,6 +2,6 @@
 <tree string="Shipping Box Type">
     <field name="name"/>
     <field name="code"/>
-    <field name="provider"/>
+    <field name="carrier_cost_method"/>
     <field name="distance_unit"/>
 </tree>

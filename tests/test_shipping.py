@@ -176,13 +176,13 @@ class TestShipping(unittest.TestCase):
             'list_price': Decimal('10'),
             'cost_price': Decimal('5'),
             'default_uom': self.uom_kg,
-            'weight': weight,
-            'weight_uom': weight_uom,
             'salable': True,
             'account_revenue': account_revenue.id,
             'products': [
                 ('create', [{
-                    'code': 'Test Product'
+                    'code': 'Test Product',
+                    'weight': weight,
+                    'weight_uom': weight_uom,
                 }])
             ]
         }])

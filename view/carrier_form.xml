@@ -7,6 +7,12 @@
             <page id="tracking_numbers" string="Tracking Numbers">
                 <field name="tracking_numbers" colspan="4"/>
             </page>
+            <page id="services" string="Services">
+                <field name="services" colspan="4"/>
+            </page>
+            <page id="box_types" string="Box Types">
+                <field name="box_types" colspan="4"/>
+            </page>
         </notebook>
     </xpath>
 </data>

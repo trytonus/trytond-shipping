@@ -80,7 +80,8 @@ minor_version = int(minor_version)
 requires = []
 
 MODULE2PREFIX = {
-    'customs_value': 'fio'
+    'customs_value': 'fio',
+    'product_variant_measurements': 'fio'
 }
 
 MODULE = "shipping"

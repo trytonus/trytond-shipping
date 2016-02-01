@@ -1,13 +1,7 @@
 <?xml version="1.0"?>
-
 <form string="Carrier Service" col="4">
-    <label name="provider"/>
-    <field name="provider"/>
     <label name="name"/>
     <field name="name"/>
-    <label name="active" />
-    <field name="active" />
-    <newline/>
-    <separator name="box_types" colspan="4"/>
-    <field name="box_types" colspan="4"/>
+    <label name="carrier_cost_method"/>
+    <field name="carrier_cost_method"/>
 </form>
