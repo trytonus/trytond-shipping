@@ -39,7 +39,7 @@
             <label name="weight_uom"/>
             <field name="weight_uom"/>
             <label name="tracking_number"/>
-            <field name="cost_currency"/>
+            <field name="tracking_number"/>
         </page>
     </xpath>
 </data>
