@@ -8,7 +8,6 @@ from trytond.model import fields
 from trytond.pool import PoolMeta, Pool
 from trytond.pyson import Eval, Not, Bool
 from trytond.transaction import Transaction
-from trytond.exceptions import UserError
 
 __all__ = ['SaleLine', 'Sale']
 __metaclass__ = PoolMeta
@@ -57,6 +56,15 @@ class Sale:
             "invisible": Not(Bool(Eval('carrier')))
         }, depends=['carrier', 'available_carrier_services']
     )
+    carrier_cost_method = fields.Function(
+        fields.Char('Carrier Cost Method'),
+        "on_change_with_carrier_cost_method"
+    )
+
+    @fields.depends("carrier")
+    def on_change_with_carrier_cost_method(self, name=None):
+        if self.carrier:
+            return self.carrier.carrier_cost_method
 
     @fields.depends("carrier")
     def on_change_with_available_carrier_services(self, name=None):
@@ -167,7 +175,9 @@ class Sale:
         :param shipment_cost: The shipment cost calculated according to carrier
         :param description: Shipping line description
         """
-        self.__class__.write([self], {
+        Sale = Pool().get('sale.sale')
+
+        Sale.write([self], {
             'lines': [
                 ('create', [{
                     'type': 'line',
@@ -195,19 +205,35 @@ class Sale:
         context['sale'] = self.id
         return context
 
-    def apply_product_shipping(self):
+    def apply_shipping_rate(self, rate):
         """
-        This method apply product(carrier) shipping.
+        This method applies shipping rate. Rate is a dictionary with following
+        keys:
+            {
+                'display_name': Name to display,
+                'carrier_service': carrier.service active record,
+                'cost': cost,
+                'cost_currency': currency.currency active repord,
+                'carrier': carrier active record,
+            }
         """
         Currency = Pool().get('currency.currency')
 
-        with Transaction().set_context(self._get_carrier_context()):
-            shipment_cost, currency_id = self.carrier.get_sale_price()
+        self._apply_shipping_rate(rate)
+        self.save()
 
-        shipment_cost = Currency.compute(
-            Currency(currency_id), shipment_cost, self.currency
-        )
-        self.add_shipping_line(shipment_cost, self.carrier.rec_name)
+        shipment_cost = rate['cost']
+        if self.currency != rate['cost_currency']:
+            shipment_cost = Currency.compute(
+                rate['cost_currency'], shipment_cost, self.currency
+            )
+
+        self.add_shipping_line(shipment_cost, rate['display_name'])
+
+    def _apply_shipping_rate(self, rate):
+        "Updates the sale with rate dictionary"
+        self.carrier = rate['carrier']
+        self.carrier_service = rate['carrier_service']
 
     def get_shipping_rates(self, carriers=None):
         """
@@ -236,15 +262,14 @@ class Sale:
         return rates
 
     def get_shipping_rate(self, carrier, carrier_service=None, silent=False):
-        Currency = Pool().get('currency.currency')
+        Company = Pool().get('company.company')
 
         if carrier.carrier_cost_method == 'product':
-            cost, currency_id = carrier.get_sale_price()
             return [{
                 'display_name': carrier.rec_name,
                 'carrier_service': carrier_service,
-                'cost': cost,
-                'cost_currency': Currency(currency_id),
+                'cost': carrier.carrier_product.list_price,
+                'cost_currency': Company(Transaction().context['company']).currency,  # noqa
                 'carrier': carrier,
             }]
         return []
@@ -257,39 +282,10 @@ class Sale:
         """
         return []
 
-    def get_all_shipping_rates(self):
-        """
-        Return shipping rates for all allowed carriers
-
-        Return list of tuples as:
-            [
-                (
-                    <display method name>, <rate>, <currency>, <metadata>,
-                    <write_vals>
-                )
-                ...
-            ]
-        """
-        Carrier = Pool().get('carrier')
-
-        carriers = Carrier.search(self.get_allowed_carriers_domain())
-        errors = []
-        rate_list = []
-        for carrier in carriers:
-            try:
-                rate_list += self.get_shipping_rates(carrier=carrier)
-            except UserError, e:
-                # XXX: Collect all errors from shipping carriers
-                errors.append(e.message)
-        if not rate_list and errors:
-            raise self.raise_user_error('\n'.join(errors))
-        return rate_list
-
     def create_shipment(self, shipment_type):
         Shipment = Pool().get('stock.shipment.out')
 
         with Transaction().set_context(ignore_carrier_computation=True):
-            # TODO: Compute carrier cost.
             shipments = super(Sale, self).create_shipment(shipment_type)
 
         if shipment_type == 'out' and shipments and self.carrier and \

@@ -202,6 +202,15 @@ class ShipmentOut:
             ('id', 'in', Eval('available_carrier_services'))
         ], depends=['available_carrier_services']
     )
+    carrier_cost_method = fields.Function(
+        fields.Char('Carrier Cost Method'),
+        "on_change_with_carrier_cost_method"
+    )
+
+    @fields.depends("carrier")
+    def on_change_with_carrier_cost_method(self, name=None):
+        if self.carrier:
+            return self.carrier.carrier_cost_method
 
     @fields.depends('carrier')
     def on_change_with_available_carrier_services(self, name=None):
@@ -349,7 +358,7 @@ class ShipmentOut:
 
         return True
 
-    def _create_default_package(self):
+    def _create_default_package(self, box_type):
         """
         Create a single stock package for the whole shipment
         """
@@ -363,6 +372,7 @@ class ShipmentOut:
         package, = Package.create([{
             'shipment': '%s,%d' % (self.__name__, self.id),
             'type': type_id,
+            'box_type': box_type.id,
             'moves': [('add', self.outgoing_moves)],
         }])
         return package
@@ -394,27 +404,48 @@ class ShipmentOut:
         return rates
 
     def get_shipping_rate(self, carrier, carrier_service=None, silent=False):
-        Currency = Pool().get('currency.currency')
+        Company = Pool().get('company.company')
 
         if carrier.carrier_cost_method == 'product':
             cost, currency_id = carrier.get_sale_price()
             return [{
                 'display_name': carrier.rec_name,
                 'carrier_service': carrier_service,
-                'cost': cost,
-                'currency': Currency(currency_id),
+                'cost': carrier.carrier_product.list_price,
+                'cost_currency': Company(Transaction().context['company']).currency,  # noqa
                 'carrier': carrier,
             }]
         return []
 
     def apply_shipping_rate(self, rate):
-        """Applies the rate dictionary returned from get_shipping_rate methods
         """
-        self.carrier_service = rate.get('carrier_service')
-        self.cost = rate.get('cost')
-        self.cost_currency = rate.get('cost_currency')
-        self.carrier = rate.get('carrier')
+        This method applies shipping rate. Rate is a dictionary with following
+        keys:
+            {
+                'display_name': Name to display,
+                'carrier_service': carrier.service active record,
+                'cost': cost,
+                'cost_currency': currency.currency active repord,
+                'carrier': carrier active record,
+            }
+        """
+        Currency = Pool().get('currency.currency')
+
+        self._apply_shipping_rate(rate)
         self.save()
+
+        shipment_cost = rate['cost']
+        if self.currency != rate['cost_currency']:
+            shipment_cost = Currency.compute(
+                rate['cost_currency'], shipment_cost, self.currency
+            )
+
+        self.add_shipping_line(shipment_cost, rate['display_name'])
+
+    def _apply_shipping_rate(self, rate):
+        "Updates the sale with rate dictionary"
+        self.carrier = rate['carrier']
+        self.carrier_service = rate['carrier_service']
 
 
 class StockMove:
@@ -486,9 +517,39 @@ class ShippingCarrierSelector(ModelView):
     )
     override_weight = fields.Float("Override Weight", digits=(16,  2))
     no_of_packages = fields.Integer('Number of packages', readonly=True)
+    box_type = fields.Many2One(
+        "carrier.box_type", "Box Type", required=True, domain=[
+            ('id', 'in', Eval("available_box_types"))
+        ], depends=["available_box_types"]
+    )
 
     shipping_instructions = fields.Text('Shipping Instructions', readonly=True)
-    carrier_service = fields.Many2One("carrier.service", "Carrier Service")
+    carrier_service = fields.Many2One(
+        "carrier.service", "Carrier Service", domain=[
+            ('id', 'in', Eval("available_carrier_services"))
+        ], depends=["available_carrier_services"]
+    )
+
+    available_box_types = fields.Function(
+        fields.One2Many("carrier.box_type", None, 'Available Box Types'),
+        getter="on_change_with_available_box_types"
+    )
+    available_carrier_services = fields.Function(
+        fields.One2Many("carrier.service", None, 'Available Carrier Services'),
+        getter="on_change_with_available_carrier_services"
+    )
+
+    @fields.depends("carrier")
+    def on_change_with_available_box_types(self, name=None):
+        if self.carrier:
+            return map(int, self.carrier.box_types)
+        return []
+
+    @fields.depends("carrier")
+    def on_change_with_available_carrier_services(self, name=None):
+        if self.carrier:
+            return map(int, self.carrier.services)
+        return []
 
 
 class GenerateShippingLabelMessage(ModelView):
@@ -613,7 +674,7 @@ class GenerateShippingLabel(Wizard):
         self.start.shipment = shipment
 
         if not shipment.packages:
-            self.start.shipment._create_default_package()
+            self.start.shipment._create_default_package(self.start.box_type)
 
         default_values = self.default_start({})
         if self.start.override_weight and \
@@ -671,6 +732,7 @@ class GenerateShippingLabel(Wizard):
         shipment = self.start.shipment
         shipment.carrier = self.start.carrier
         shipment.cost_currency = self.start.carrier.currency
+        shipment.carrier_service = self.start.carrier_service
 
         return shipment
 
