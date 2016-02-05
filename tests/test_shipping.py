@@ -60,6 +60,7 @@ class TestShipping(unittest.TestCase):
         self.Package = POOL.get('stock.package')
         self.PackageType = POOL.get('stock.package.type')
         self.Tracking = POOL.get('shipment.tracking')
+        self.BoxType = POOL.get('carrier.box_type')
 
     def setup_defaults(self):
         """
@@ -113,6 +114,7 @@ class TestShipping(unittest.TestCase):
 
         self.uom_kg, = self.Uom.search([('symbol', '=', 'kg')])
         self.uom_pound, = self.Uom.search([('symbol', '=', 'lb')])
+        self.uom_inch, = self.Uom.search([('symbol', '=', 'in')])
 
         self.sale_party, = self.Party.create([{
             'name': 'Test Sale Party',
@@ -134,10 +136,19 @@ class TestShipping(unittest.TestCase):
 
         carrier_product = self.create_product(is_service=True)
 
+        self.custom_box_type, = self.BoxType.create([{
+            'name': "Custom Box Type",
+            "code": "CODE_BOX",
+            "length": 1,
+            "width": 2,
+            "height": 3,
+            "distance_unit": self.uom_inch.id,
+        }])
         self.carrier, = self.Carrier.create([{
             'party': carrier_party,
             'carrier_product': carrier_product,
             'currency': currency,
+            'box_types': [('add', [self.custom_box_type.id])]
         }])
 
         warehouse_address, = self.Address.create([{
@@ -559,6 +570,8 @@ class TestShipping(unittest.TestCase):
 
                 self.assertFalse(sale.shipments[0].is_international_shipping)
 
+                shipment, = sale.shipments
+
             with Transaction().set_context(
                     active_id=sale.shipments[0], company=self.company.id
             ):
@@ -568,8 +581,10 @@ class TestShipping(unittest.TestCase):
                     data = {
                         start_state: {
                             'carrier': self.carrier,
-                            'shipment': sale.shipments[0],
+                            'shipment': shipment,
                             'override_weight': 9,
+                            'carrier_service': shipment.carrier_service,
+                            'cost_currency': shipment.cost_currency,
                         },
                     }
 
@@ -596,6 +611,9 @@ class TestShipping(unittest.TestCase):
                         'carrier': self.carrier,
                         'shipment': sale.shipments[0],
                         'override_weight': 9,
+                        'carrier_service': shipment.carrier_service,
+                        'cost_currency': shipment.cost_currency,
+                        'box_type': self.custom_box_type,
                     },
                 }
 
