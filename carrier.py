@@ -20,7 +20,8 @@ class Carrier:
     "Carrier"
     __name__ = 'carrier'
 
-    currency = fields.Many2One('currency.currency', 'Currency', required=True)
+    # XXX: Pending for deprecation
+    currency = fields.Many2One('currency.currency', 'Currency')
 
     tracking_numbers = fields.One2Many(
         "shipment.tracking", "carrier", "Tracking Numbers"
