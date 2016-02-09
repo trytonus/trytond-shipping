@@ -431,16 +431,17 @@ class ShipmentOut:
         """
         Currency = Pool().get('currency.currency')
 
-        self._apply_shipping_rate(rate)
-        self.save()
-
         shipment_cost = rate['cost']
-        if self.currency != rate['cost_currency']:
+        if self.cost_currency != rate['cost_currency']:
             shipment_cost = Currency.compute(
-                rate['cost_currency'], shipment_cost, self.currency
+                rate['cost_currency'], shipment_cost, self.cost_currency
             )
 
-        self.add_shipping_line(shipment_cost, rate['display_name'])
+        rate['cost'] = shipment_cost
+        rate['cost_currency'] = self.cost_currency
+
+        self._apply_shipping_rate(rate)
+        self.save()
 
     def _apply_shipping_rate(self, rate):
         "Updates the sale with rate dictionary"
