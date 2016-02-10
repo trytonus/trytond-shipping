@@ -379,7 +379,7 @@ class TestShipping(unittest.TestCase):
 
             # 0.5 kg + 3.0 kg = 3.5 kg = 7.11 pounds (approx.)
             self.assertAlmostEqual(
-                sale.total_weight, 7.11, delta=0.001
+                sale.weight, 7.11, delta=0.001
             )
 
     def test_0010_stock_move_weight(self):
@@ -455,7 +455,7 @@ class TestShipping(unittest.TestCase):
 
                 # 0.5 kg + 3.0 kg = 3.5 kg = 7.11 pounds (approx.)
                 self.assertAlmostEqual(
-                    sale.total_weight, 7.11, delta=0.001
+                    sale.weight, 7.11, delta=0.001
                 )
 
                 self.Sale.quote([sale])
@@ -581,7 +581,6 @@ class TestShipping(unittest.TestCase):
                     data = {
                         start_state: {
                             'carrier': self.carrier,
-                            'shipment': shipment,
                             'override_weight': 9,
                             'carrier_service': shipment.carrier_service,
                             'cost_currency': shipment.cost_currency,
@@ -589,7 +588,7 @@ class TestShipping(unittest.TestCase):
                     }
 
                     result = self.LabelWizard.execute(
-                        session_id, data, 'generate'
+                        session_id, data, 'generate_labels'
                     )
 
             self.Shipment.pack(sale.shipments)
@@ -609,7 +608,6 @@ class TestShipping(unittest.TestCase):
                 data = {
                     start_state: {
                         'carrier': self.carrier,
-                        'shipment': sale.shipments[0],
                         'override_weight': 9,
                         'carrier_service': shipment.carrier_service,
                         'cost_currency': shipment.cost_currency,
@@ -630,7 +628,7 @@ class TestShipping(unittest.TestCase):
                 # Label generation feature is unavailable in this module.
                 with self.assertRaises(UserError):
                     result = self.LabelWizard.execute(
-                        session_id, data, 'generate'
+                        session_id, data, 'generate_labels'
                     )
                 # No attachments.
                 self.assertEqual(len(self.Attachment.search([])), 0)
@@ -771,7 +769,7 @@ class TestShipping(unittest.TestCase):
                     'unit': product_2.template.default_uom,
                 }])
 
-                self.assertEqual(sale.total_weight, 22.04)
+                self.assertEqual(sale.weight, 22.04)
                 self.assertEqual(sale.weight_uom.name, 'Pound')
 
                 self.Sale.quote([sale])
@@ -820,8 +818,9 @@ class TestShipping(unittest.TestCase):
                 data = {
                     start_state: {
                         'carrier': self.carrier,
-                        'shipment': sale.shipments[0],
                         'override_weight': 7.0,
+                        'carrier_service': None,
+                        'box_type': None,
                     },
                 }
 
@@ -846,8 +845,9 @@ class TestShipping(unittest.TestCase):
                 data = {
                     start_state: {
                         'carrier': self.carrier,
-                        'shipment': sale.shipments[0],
                         'override_weight': 8.0,
+                        'carrier_service': None,
+                        'box_type': None,
                     },
                 }
 
@@ -873,8 +873,9 @@ class TestShipping(unittest.TestCase):
                 data = {
                     start_state: {
                         'carrier': self.carrier,
-                        'shipment': sale.shipments[0],
                         'override_weight': None,
+                        'carrier_service': None,
+                        'box_type': None,
                     },
                 }
 

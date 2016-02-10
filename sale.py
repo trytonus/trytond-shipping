@@ -3,7 +3,6 @@
     sale.py
 
 """
-import warnings
 from trytond.model import fields
 from trytond.pool import PoolMeta, Pool
 from trytond.pyson import Eval, Not, Bool
@@ -21,20 +20,13 @@ class Sale:
         fields.Boolean("Is International Shipping"),
         'on_change_with_is_international_shipping'
     )
-    package_weight = fields.Function(
-        fields.Float(
-            "Package weight", digits=(16,  Eval('weight_digits', 2)),
-            depends=['weight_digits'],
-        ),
-        'get_package_weight'
-    )
 
-    total_weight = fields.Function(
+    weight = fields.Function(
         fields.Float(
-            "Total weight", digits=(16,  Eval('weight_digits', 2)),
+            "Weight", digits=(16,  Eval('weight_digits', 2)),
             depends=['weight_digits'],
         ),
-        'get_total_weight'
+        'get_weight'
     )
 
     weight_uom = fields.Function(
@@ -66,6 +58,13 @@ class Sale:
         if self.carrier:
             return self.carrier.carrier_cost_method
 
+    def on_change_lines(self):
+        """Pass a flag in context which indicates the get_sale_price method
+        of carrier not to calculate cost on each line change
+        """
+        with Transaction().set_context({'ignore_carrier_computation': True}):
+            return super(Sale, self).on_change_lines()
+
     @fields.depends("carrier")
     def on_change_with_available_carrier_services(self, name=None):
         if self.carrier:
@@ -87,83 +86,39 @@ class Sale:
 
     def get_weight_uom(self, name):
         """
-        Returns weight uom for the package
+        Returns weight uom for the sale
         """
-        return self._get_weight_uom().id
+        ModelData = Pool().get('ir.model.data')
 
-    def _get_weight_uom(self):
-        """
-        Returns Pound as default value for uom
+        return ModelData.get_id('product', 'uom_pound')
 
-        Downstream module can override this method to change weight uom as per
-        carrier
-        """
-        UOM = Pool().get('product.uom')
-
-        return UOM.search([('symbol', '=', 'lb')])[0]
-
-    def get_package_weight(self, name):
+    def get_weight(self, name):
         """
         Returns sum of weight associated with each line
         """
-        warnings.warn(
-            'Field package_weight is depricated, use total_weight instead',
-            DeprecationWarning, stacklevel=2
-        )
-        weight_uom = self._get_weight_uom()
-        return self._get_package_weight(weight_uom)
-
-    def get_total_weight(self, name):
-        """
-        Returns sum of weight associated with each line
-        """
-        weight_uom = self._get_weight_uom()
-        return self._get_total_weight(weight_uom)
+        return sum(map(
+            lambda line: line.get_weight(self.weight_uom, silent=True),
+            self.lines
+        ))
 
     @fields.depends('party', 'shipment_address', 'warehouse')
     def on_change_with_is_international_shipping(self, name=None):
         """
         Return True if international shipping
         """
-        from_address = self._get_ship_from_address()
+        from_address = self._get_ship_from_address(silent=True)
 
         if self.shipment_address and from_address and \
-           from_address.country and self.shipment_address.country and \
-           from_address.country != self.shipment_address.country:
+                from_address.country and self.shipment_address.country and \
+                from_address.country != self.shipment_address.country:
             return True
         return False
 
-    def _get_package_weight(self, uom):
-        """
-        Returns sum of weight associated with package
-        """
-        warnings.warn(
-            '_get_package_weight is depricated, use _get_total_weight instead',
-            DeprecationWarning, stacklevel=2
-        )
-        return sum(
-            map(
-                lambda line: line.get_weight(uom, silent=True),
-                self.lines
-            )
-        )
-
-    def _get_total_weight(self, uom):
-        """
-        Returns sum of weight for given uom
-        """
-        return sum(
-            map(
-                lambda line: line.get_weight(uom, silent=True),
-                self.lines
-            )
-        )
-
-    def _get_ship_from_address(self):
+    def _get_ship_from_address(self, silent=False):
         """
         Usually the warehouse from which you ship
         """
-        if not self.warehouse.address:
+        if not self.warehouse.address and not silent:
             return self.raise_user_error('warehouse_address_missing')
         return self.warehouse and self.warehouse.address
 
@@ -208,7 +163,7 @@ class Sale:
     def apply_shipping_rate(self, rate):
         """
         This method applies shipping rate. Rate is a dictionary with following
-        keys:
+        minimum keys:
             {
                 'display_name': Name to display,
                 'carrier_service': carrier.service active record,
@@ -216,10 +171,13 @@ class Sale:
                 'cost_currency': currency.currency active repord,
                 'carrier': carrier active record,
             }
+
+        It also creates a shipment line by deleting all existing ones.
         """
         Currency = Pool().get('currency.currency')
 
-        self._apply_shipping_rate(rate)
+        self.carrier = rate['carrier']
+        self.carrier_service = rate['carrier_service']
         self.save()
 
         shipment_cost = rate['cost']
@@ -230,12 +188,7 @@ class Sale:
 
         self.add_shipping_line(shipment_cost, rate['display_name'])
 
-    def _apply_shipping_rate(self, rate):
-        "Updates the sale with rate dictionary"
-        self.carrier = rate['carrier']
-        self.carrier_service = rate['carrier_service']
-
-    def get_shipping_rates(self, carriers=None):
+    def get_shipping_rates(self, carriers=None, silent=False):
         """
         Gives a list of rates from carriers provided. If no carriers provided,
         return rates from all the carriers.
@@ -258,10 +211,24 @@ class Sale:
 
         rates = []
         for carrier in carriers:
-            rates.extend(self.get_shipping_rate(carrier, silent=True))
+            rates.extend(self.get_shipping_rate(carrier, silent))
         return rates
 
     def get_shipping_rate(self, carrier, carrier_service=None, silent=False):
+        """
+        Gives a list of rates from provided carrier and carrier service.
+
+        List contains dictionary with following minimum keys:
+            [
+                {
+                    'display_name': Name to display,
+                    'carrier_service': carrier.service active record,
+                    'cost': cost,
+                    'cost_currency': currency.currency active repord,
+                    'carrier': carrier active record,
+                }..
+            ]
+        """
         Company = Pool().get('company.company')
 
         if carrier.carrier_cost_method == 'product':
@@ -343,7 +310,7 @@ class SaleLine:
 
         # Compare product weight uom with the weight uom used by carrier
         # and calculate weight if botth are not same
-        if self.product.weight_uom.symbol != weight_uom.symbol:
+        if self.product.weight_uom != weight_uom:
             weight = ProductUom.compute_qty(
                 self.product.weight_uom,
                 weight,
