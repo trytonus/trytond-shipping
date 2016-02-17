@@ -1,4 +1,8 @@
 <data>
+    <xpath expr="//field[@name='party']" position="after">
+        <label name="active"/>
+        <field name="active"/>
+    </xpath>
     <xpath expr="/form/field[@name='carrier_cost_method']" position="after">
         <notebook colspan="4">
             <page id="services" string="Services">

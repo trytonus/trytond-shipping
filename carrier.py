@@ -20,6 +20,8 @@ class Carrier:
     "Carrier"
     __name__ = 'carrier'
 
+    active = fields.Boolean("Active?", select=True)
+
     # XXX: Pending for deprecation
     currency = fields.Many2One('currency.currency', 'Currency')
 
@@ -42,6 +44,10 @@ class Carrier:
             ('carrier_cost_method', '=', None)
         ]], depends=['carrier_cost_method']
     )
+
+    @staticmethod
+    def default_active():
+        return True
 
     @staticmethod
     def default_currency():
