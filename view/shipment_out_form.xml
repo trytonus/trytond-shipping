@@ -1,7 +1,15 @@
 <?xml version="1.0"?>
 <data>
+    <xpath expr="//label[@name='carrier']" position="replace">
+    </xpath>
+    <xpath expr="//field[@name='carrier']" position="replace">
+    </xpath>
+    <xpath expr="//label[@name='cost']" position="replace">
+    </xpath>
+    <xpath expr="//group[@id='cost']" position="replace">
+    </xpath>
     <xpath expr="/form/group[@id='state_buttons']/group[@id='buttons']" position="replace_attributes">
-	<group col="7" colspan="1" id="buttons">
+	    <group col="7" colspan="1" id="buttons">
         </group>
     </xpath>
     <xpath expr="/form/group[@id='state_buttons']/group[@id='buttons']/button[@name='done']" position="after">
@@ -18,14 +26,8 @@
             <field name="shipping_instructions"/>
         </page>
     </xpath>
-    <xpath expr="//field[@name=&quot;carrier&quot;]" position="after">
-        <group col="6" colspan="2" id="group_checkboxes">
-            <label name="tracking_number"/>
-            <field name="tracking_number"/>
-        </group>
-    </xpath>
     <xpath expr="//notebook" position="inside">
-        <page id="carrier" string="Carrier Details">
+        <page id="carrier" string="Carrier">
             <label name="carrier"/>
             <field name="carrier"/>
             <label name="carrier_service"/>

@@ -11,7 +11,7 @@ from trytond.transaction import Transaction
 
 __metaclass__ = PoolMeta
 __all__ = [
-    'ShipmentOut', 'StockMove', 'GenerateShippingLabelMessage',
+    'ShipmentOut', 'GenerateShippingLabelMessage',
     'GenerateShippingLabel', 'ShippingCarrierSelector',
     'ShippingLabelNoModules', 'Package', 'ShipmentTracking'
 ]
@@ -133,13 +133,10 @@ class Package:
         """
         Returns sum of weight associated with each move line
         """
-        weight = sum(
-            map(
-                lambda move: move.get_weight(self.weight_uom, silent=True),
-                self.moves
-            )
-        )
-        return weight
+        return sum(map(
+            lambda move: move.get_weight(self.weight_uom, silent=True),
+            self.moves
+        ))
 
     @staticmethod
     def default_type():
@@ -159,8 +156,6 @@ class Package:
 class ShipmentOut:
     "Shipment Out"
     __name__ = 'stock.shipment.out'
-
-    tracking_url = fields.Char('Tracking Url', readonly=True)
 
     is_international_shipping = fields.Function(
         fields.Boolean("Is International Shipping"),
@@ -218,6 +213,10 @@ class ShipmentOut:
             return map(int, self.carrier.services)
         return []
 
+    def on_change_inventory_moves(self):
+        with Transaction().set_context(ignore_carrier_computation=True):
+            return super(ShipmentOut, self).on_change_inventory_moves()
+
     def get_tracking_number(self, name):
         """
         Returns master tracking number from package
@@ -253,12 +252,10 @@ class ShipmentOut:
         """
         Returns sum of weight associated with each move line
         """
-        return sum(
-            map(
-                lambda move: move.get_weight(self.weight_uom, silent=True),
-                self.outgoing_moves
-            )
-        )
+        return sum(map(
+            lambda move: move.get_weight(self.weight_uom, silent=True),
+            self.outgoing_moves
+        ))
 
     @fields.depends('weight_uom')
     def on_change_with_weight_digits(self, name=None):
@@ -269,6 +266,11 @@ class ShipmentOut:
     @classmethod
     def __setup__(cls):
         super(ShipmentOut, cls).__setup__()
+        readonly_when_done = {
+            'readonly': Eval('state') == 'done',
+        }
+        cls.carrier.states = readonly_when_done
+        cls.carrier_service.states = readonly_when_done
         cls._buttons.update({
             'label_wizard': {
                 'invisible': Or(
@@ -293,14 +295,6 @@ class ShipmentOut:
         })
 
     @classmethod
-    def copy(cls, shipments, default=None):
-        if default is None:
-            default = {}
-        default = default.copy()
-        default['tracking_number'] = None
-        return super(ShipmentOut, cls).copy(shipments, default=default)
-
-    @classmethod
     @ModelView.button_action('shipping.wizard_generate_shipping_label')
     def label_wizard(cls, shipments):
         if len(shipments) == 0:
@@ -313,7 +307,7 @@ class ShipmentOut:
         """
         Return True if international shipping
         """
-        from_address = self._get_ship_from_address()
+        from_address = self._get_ship_from_address(silent=True)
         if self.delivery_address and from_address and \
            from_address.country and self.delivery_address.country and \
            from_address.country != self.delivery_address.country:
@@ -322,26 +316,17 @@ class ShipmentOut:
 
     def get_weight_uom(self, name):
         """
-        Returns weight uom for the package
+        Returns weight uom for the shipment
         """
-        return self._get_weight_uom().id
+        ModelData = Pool().get('ir.model.data')
 
-    def _get_weight_uom(self):
-        """
-        Returns Pound as default value for uom
+        return ModelData.get_id('product', 'uom_pound')
 
-        Downstream module can override this method to change weight uom as per
-        carrier
-        """
-        UOM = Pool().get('product.uom')
-
-        return UOM.search([('symbol', '=', 'lb')])[0]
-
-    def _get_ship_from_address(self):
+    def _get_ship_from_address(self, silent=False):
         """
         Usually the warehouse from which you ship
         """
-        if self.warehouse and not self.warehouse.address:
+        if not self.warehouse.address and not silent:
             return self.raise_user_error('warehouse_address_missing')
         return self.warehouse and self.warehouse.address
 
@@ -358,26 +343,20 @@ class ShipmentOut:
 
         return True
 
-    def _create_default_package(self, box_type):
+    def _create_default_package(self, box_type=None):
         """
         Create a single stock package for the whole shipment
         """
         Package = Pool().get('stock.package')
-        ModelData = Pool().get('ir.model.data')
-
-        type_id = ModelData.get_id(
-            "shipping", "shipment_package_type"
-        )
 
         package, = Package.create([{
             'shipment': '%s,%d' % (self.__name__, self.id),
-            'type': type_id,
             'box_type': box_type.id,
             'moves': [('add', self.outgoing_moves)],
         }])
         return package
 
-    def get_shipping_rates(self, carriers=None):
+    def get_shipping_rates(self, carriers=None, silent=False):
         """
         Gives a list of rates from carriers provided. If no carriers provided,
         return rates from all the carriers.
@@ -400,10 +379,24 @@ class ShipmentOut:
 
         rates = []
         for carrier in carriers:
-            rates.extend(self.get_shipping_rate(carrier, silent=True))
+            rates.extend(self.get_shipping_rate(carrier, silent))
         return rates
 
     def get_shipping_rate(self, carrier, carrier_service=None, silent=False):
+        """
+        Gives a list of rates from provided carrier and carrier service.
+
+        List contains dictionary with following minimum keys:
+            [
+                {
+                    'display_name': Name to display,
+                    'carrier_service': carrier.service active record,
+                    'cost': cost,
+                    'cost_currency': currency.currency active repord,
+                    'carrier': carrier active record,
+                }..
+            ]
+        """
         Company = Pool().get('company.company')
 
         if carrier.carrier_cost_method == 'product':
@@ -419,8 +412,9 @@ class ShipmentOut:
 
     def apply_shipping_rate(self, rate):
         """
-        This method applies shipping rate. Rate is a dictionary with following
-        keys:
+        This method applies shipping rate. Rate is a dictionary with
+        following minimum keys:
+
             {
                 'display_name': Name to display,
                 'carrier_service': carrier.service active record,
@@ -437,73 +431,20 @@ class ShipmentOut:
                 rate['cost_currency'], shipment_cost, self.cost_currency
             )
 
-        rate['cost'] = shipment_cost
-        rate['cost_currency'] = self.cost_currency
-
-        self._apply_shipping_rate(rate)
-        self.save()
-
-    def _apply_shipping_rate(self, rate):
-        "Updates the sale with rate dictionary"
+        self.cost = shipment_cost
+        self.cost_currency = self.cost_currency
         self.carrier = rate['carrier']
         self.carrier_service = rate['carrier_service']
+        self.save()
 
-
-class StockMove:
-    "Stock move"
-    __name__ = "stock.move"
-
-    @classmethod
-    def __setup__(cls):
-        super(StockMove, cls).__setup__()
-        cls._error_messages.update({
-            'weight_required':
-                'Weight for product %s in stock move is missing',
-        })
-
-    def get_weight(self, weight_uom, silent=False):
+    def generate_shipping_labels(self):
         """
-        Returns weight as required for carrier
-
-        :param weight_uom: Weight uom used by carrier
-        :param silent: Raise error if not silent
+        Generates shipment label for shipment and saves labels,
+        tracking numbers.
         """
-        ProductUom = Pool().get('product.uom')
-
-        if self.quantity <= 0:
-            return 0
-
-        if not self.product.weight:
-            if silent:
-                return 0
-            self.raise_user_error(
-                'weight_required',
-                error_args=(self.product.name,)
-            )
-
-        # Find the quantity in the default uom of the product as the weight
-        # is for per unit in that uom
-        if self.uom != self.product.default_uom:
-            quantity = ProductUom.compute_qty(
-                self.uom,
-                self.quantity,
-                self.product.default_uom
-            )
-        else:
-            quantity = self.quantity
-
-        weight = self.product.weight * quantity
-
-        # Compare product weight uom with the weight uom used by carrier
-        # and calculate weight if botth are not same
-        if self.product.weight_uom.symbol != weight_uom.symbol:
-            weight = ProductUom.compute_qty(
-                self.product.weight_uom,
-                weight,
-                weight_uom
-            )
-
-        return weight
+        self.raise_user_error(
+            "Shipping label generation feature is not available"
+        )
 
 
 class ShippingCarrierSelector(ModelView):
@@ -512,9 +453,6 @@ class ShippingCarrierSelector(ModelView):
 
     carrier = fields.Many2One(
         "carrier", "Carrier", required=True
-    )
-    shipment = fields.Many2One(
-        'stock.shipment.out', 'Shipment', required=True, readonly=True
     )
     override_weight = fields.Float("Override Weight", digits=(16,  2))
     no_of_packages = fields.Integer('Number of packages', readonly=True)
@@ -554,18 +492,19 @@ class ShippingCarrierSelector(ModelView):
 
 
 class GenerateShippingLabelMessage(ModelView):
-    'Generate UPS Labels Message'
+    'Generate Labels Message'
     __name__ = 'shipping.label.end'
 
-    tracking_number = fields.Char("Tracking number", readonly=True)
+    tracking_number = fields.Many2One(
+        "shipment.tracking", "Tracking number", readonly=True
+    )
     message = fields.Text("Message", readonly=True)
     attachments = fields.One2Many(
-        'ir.attachment', None,
-        'Attachments', readonly=True
+        'ir.attachment', None, 'Attachments', readonly=True
     )
     cost = fields.Numeric("Cost", digits=(16, 2), readonly=True)
     cost_currency = fields.Many2One(
-        'currency.currency', 'Cost Currency', required=True, readonly=True
+        'currency.currency', 'Cost Currency', readonly=True
     )
 
 
@@ -590,6 +529,10 @@ class GenerateShippingLabel(Wizard):
     'Generate Labels'
     __name__ = 'shipping.label'
 
+    #: This is the first state of wizard to generate shipping label.
+    #: It asks for carrier, carrier_service, box_type and override weight,
+    #: once entered, it move to `next` transition where it saves all the
+    #: values on shipment.
     start = StateView(
         'shipping.label.start',
         'shipping.select_carrier_view_form',
@@ -598,8 +541,12 @@ class GenerateShippingLabel(Wizard):
             Button('Continue', 'next', 'tryton-go-next'),
         ]
     )
+
+    #: Transition saves values from `start` state to the shipment.
     next = StateTransition()
 
+    #: This state is showed up when shipping provider doesnt give facility
+    #: to generate labels.
     no_modules = StateView(
         'shipping.label.no_modules',
         'shipping.no_module_view_form',
@@ -608,6 +555,11 @@ class GenerateShippingLabel(Wizard):
         ]
     )
 
+    #: Transition generates shipping labels.
+    generate_labels = StateTransition()
+
+    #: State shows the generated label, tracking number, cost and cost
+    #: currency.
     generate = StateView(
         'shipping.label.end',
         'shipping.generate_shipping_label_message_view_form',
@@ -615,6 +567,12 @@ class GenerateShippingLabel(Wizard):
             Button('Ok', 'end', 'tryton-ok'),
         ]
     )
+
+    @property
+    def shipment(self):
+        "Gives the active shipment."
+        Shipment = Pool().get('stock.shipment.out')
+        return Shipment(Transaction().context.get('active_id'))
 
     @classmethod
     def __setup__(cls):
@@ -629,83 +587,67 @@ class GenerateShippingLabel(Wizard):
             'no_packages': 'Shipment %s has no packages',
         })
 
-    def _get_message(self):  # pragma: no cover
-        """
-        Returns message to be displayed on wizard
-        """
-        shipment = self.start.shipment
-        message = 'Shipment labels have been generated via %s and saved as ' \
-            'attachments for the shipment' % (
-                shipment.carrier.carrier_cost_method.upper()
-            )
-        return message
-
     def default_start(self, data):
-        Shipment = Pool().get('stock.shipment.out')
-
-        shipment = Shipment(Transaction().context.get('active_id'))
-
-        if shipment.allow_label_generation():
+        """Fill the default values for `start` state.
+        """
+        if self.shipment.allow_label_generation():
             values = {
-                'shipment': shipment.id,
-                'no_of_packages': len(shipment.packages),
-                'shipping_instructions': shipment.shipping_instructions,
+                'no_of_packages': len(self.shipment.packages),
+                'shipping_instructions': self.shipment.shipping_instructions,
             }
 
-        if shipment.carrier:
+        if self.shipment.carrier:
             values.update({
-                'carrier': shipment.carrier.id,
+                'carrier': self.shipment.carrier.id,
             })
-        if shipment.packages:
+        if self.shipment.packages:
             package_weights = [
                 p.override_weight
-                for p in shipment.packages if p.override_weight
+                for p in self.shipment.packages if p.override_weight
             ]
             values['override_weight'] = sum(package_weights)
 
-        if shipment.carrier_service:
-            values['carrier_service'] = shipment.carrier_service.id
+        if self.shipment.carrier_service:
+            values['carrier_service'] = self.shipment.carrier_service.id
 
         return values
 
     def transition_next(self):
-        Shipment = Pool().get('stock.shipment.out')
+        Company = Pool().get('company.company')
 
-        shipment = Shipment(Transaction().context.get('active_id'))
-        self.start.shipment = shipment
+        shipment = self.shipment
+        company = Company(Transaction().context['company'])
+        shipment.carrier = self.start.carrier
+        shipment.cost_currency = company.currency
+        shipment.carrier_service = self.start.carrier_service
+        shipment.save()
 
         if not shipment.packages:
-            self.start.shipment._create_default_package(self.start.box_type)
+            shipment._create_default_package(self.start.box_type)
 
         default_values = self.default_start({})
+        per_package_weight = None
         if self.start.override_weight and \
                 default_values['override_weight'] != self.start.override_weight:
             # Distribute weight equally
             per_package_weight = (
                 self.start.override_weight / len(shipment.packages)
             )
-            for package in shipment.packages:
+
+        for package in shipment.packages:
+            if per_package_weight:
                 package.override_weight = per_package_weight
-                package.save()
+            if self.start.box_type != package.box_type:
+                package.box_type = self.start.box_type
+            package.save()
 
         return 'no_modules'
 
-    def default_generate(self, data):
-        shipment = self.update_shipment()
-        shipment.save()
+    def transition_generate_labels(self):
+        "Generates shipping labels from data provided by earlier states"
+        self.shipment.generate_shipping_labels()
 
-        tracking_number = self.generate_label(shipment)
-
-        values = {
-            'tracking_number':
-                tracking_number and tracking_number.tracking_number,
-            'message': self._get_message(),
-            'attachments': self.get_attachments(),
-            'cost': shipment.cost,
-            'cost_currency': shipment.cost_currency.id,
-        }
-
-        return values
+        return "generate"
 
     def get_attachments(self):  # pragma: no cover
         """
@@ -713,44 +655,31 @@ class GenerateShippingLabel(Wizard):
         """
         Attachment = Pool().get('ir.attachment')
 
-        shipment = self.start.shipment
-
-        # TODO: Show attachments related to this label.
-
-        return map(
-            int, Attachment.search([
-                (
-                    'resource', '=', '%s,%d' %
-                    (shipment.__name__, shipment.id))
+        return map(int, Attachment.search([
+            ('resource', '=', '%s,%d' %
+                (self.shipment.__name__, self.shipment.id))
             ])
         )
 
-    def update_shipment(self):
+    def get_message(self):
         """
-        Returns unsaved instance of shipment.
-        Downstream modules can update the field.
+        Returns message to be displayed on wizard
         """
-        shipment = self.start.shipment
-        shipment.carrier = self.start.carrier
-        shipment.cost_currency = self.start.carrier.currency
-        shipment.carrier_service = self.start.carrier_service
-
-        return shipment
-
-    def generate_label(self, shipment):
-        """
-        Generate label for carrier chosen
-
-        :param shipment: Active record used to generate label
-        """
-        method_name = 'make_%s_labels' % shipment.carrier.carrier_cost_method
-
-        if not hasattr(shipment, method_name):
-            self.raise_user_error(
-                "This feature is not available"
+        message = 'Shipment labels have been generated via %s and saved as ' \
+            'attachments for the shipment' % (
+                self.shipment.carrier.carrier_cost_method.upper()
             )
+        return message
 
-        return getattr(shipment, method_name)()
+    def default_generate(self, data):
+        return {
+            'tracking_number': self.shipment.tracking_number and
+            self.shipment.tracking_number.id,
+            'message': self.get_message(),
+            'attachments': self.get_attachments(),
+            'cost': self.shipment.cost,
+            'cost_currency': self.shipment.cost_currency.id,
+        }
 
 
 class ShipmentTracking(ModelSQL, ModelView):
@@ -759,7 +688,9 @@ class ShipmentTracking(ModelSQL, ModelView):
     __name__ = 'shipment.tracking'
     _rec_name = 'tracking_number'
 
+    #: Boolean to indicate if tracking number is master.
     is_master = fields.Boolean("Is Master ?", readonly=True, select=True)
+
     origin = fields.Reference(
         'Origin', selection='get_origin', select=True, readonly=True
     )

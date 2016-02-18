@@ -11,9 +11,10 @@ from party import (
     AddressValidationSuggestionView
 )
 from shipment import (
-    ShipmentOut, StockMove, GenerateShippingLabelMessage, GenerateShippingLabel,
+    ShipmentOut, GenerateShippingLabelMessage, GenerateShippingLabel,
     ShippingCarrierSelector, ShippingLabelNoModules, Package, ShipmentTracking,
 )
+from stock import StockMove
 from sale import Sale, SaleLine, ReturnSale
 from configuration import PartyConfiguration
 from log import CarrierLog
