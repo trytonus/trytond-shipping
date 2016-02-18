@@ -213,6 +213,10 @@ class ShipmentOut:
             return map(int, self.carrier.services)
         return []
 
+    def on_change_inventory_moves(self):
+        with Transaction().set_context(ignore_carrier_computation=True):
+            return super(ShipmentOut, self).on_change_inventory_moves()
+
     def get_tracking_number(self, name):
         """
         Returns master tracking number from package
@@ -262,6 +266,11 @@ class ShipmentOut:
     @classmethod
     def __setup__(cls):
         super(ShipmentOut, cls).__setup__()
+        readonly_when_done = {
+            'readonly': Eval('state') == 'done',
+        }
+        cls.carrier.states = readonly_when_done
+        cls.carrier_service.states = readonly_when_done
         cls._buttons.update({
             'label_wizard': {
                 'invisible': Or(
