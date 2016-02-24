@@ -16,10 +16,6 @@ __all__ = [
     'ShippingLabelNoModules', 'Package', 'ShipmentTracking'
 ]
 
-STATES = {
-    'readonly': Eval('state') == 'done',
-}
-
 
 class Package:
     __name__ = 'stock.package'
@@ -195,7 +191,7 @@ class ShipmentOut:
     carrier_service = fields.Many2One(
         "carrier.service", "Carrier Service", domain=[
             ('id', 'in', Eval('available_carrier_services'))
-        ], depends=['available_carrier_services']
+        ], depends=['available_carrier_services', 'state']
     )
     carrier_cost_method = fields.Function(
         fields.Char('Carrier Cost Method'),
