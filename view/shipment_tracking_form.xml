@@ -12,9 +12,9 @@
     <label name="carrier"/>
     <field name="carrier"/>
     <label name="tracking_url"/>
-    <field name="tracking_url" colspan="3"/>
+    <field name="tracking_url"/>
     <label name="state"/>
     <field name="state"/>
-    <button name="refresh_status_button" string="Refresh Status" colspan="4"/>
-    <button name="cancel_tracking_number_button" string="Cancel Tracking Number" colspan="4"/>
+    <button name="refresh_status_button" string="Refresh Status" colspan="2"/>
+    <button name="cancel_tracking_number_button" string="Cancel" colspan="2"/>
 </form>

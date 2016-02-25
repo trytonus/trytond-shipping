@@ -705,7 +705,7 @@ class ShipmentTracking(ModelSQL, ModelView):
         ('returned', 'Returned'),
         ('cancelled', 'Cancelled'),
         ('pending_cancellation', 'Pending Cancellation'),
-        ], 'State', required=True, select=True)
+        ], 'State', readonly=True, required=True, select=True)
 
     @staticmethod
     def default_state():
@@ -721,6 +721,7 @@ class ShipmentTracking(ModelSQL, ModelView):
             'cancel_tracking_number_button': {
                 'invisible': Eval('state') == 'cancelled',
             },
+            'refresh_status_button': {},
         })
 
     def cancel_tracking_number(self):
