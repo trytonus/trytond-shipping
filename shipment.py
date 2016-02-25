@@ -16,10 +16,6 @@ __all__ = [
     'ShippingLabelNoModules', 'Package', 'ShipmentTracking'
 ]
 
-STATES = {
-    'readonly': Eval('state') == 'done',
-}
-
 
 class Package:
     __name__ = 'stock.package'
@@ -195,7 +191,7 @@ class ShipmentOut:
     carrier_service = fields.Many2One(
         "carrier.service", "Carrier Service", domain=[
             ('id', 'in', Eval('available_carrier_services'))
-        ], depends=['available_carrier_services']
+        ], depends=['available_carrier_services', 'state']
     )
     carrier_cost_method = fields.Function(
         fields.Char('Carrier Cost Method'),
@@ -231,6 +227,8 @@ class ShipmentOut:
                 '%s,%d' % (p.__name__, p.id) for p in self.packages
             ]),
             ('is_master', '=', True),
+            ('state', 'not in', [
+                'cancelled', 'pending_cancellation', 'failure']),
         ], limit=1)
 
         return tracking_numbers and tracking_numbers[0].id or None
@@ -709,7 +707,7 @@ class ShipmentTracking(ModelSQL, ModelView):
         ('returned', 'Returned'),
         ('cancelled', 'Cancelled'),
         ('pending_cancellation', 'Pending Cancellation'),
-        ], 'State', required=True, select=True)
+        ], 'State', readonly=True, required=True, select=True)
 
     @staticmethod
     def default_state():
@@ -725,6 +723,7 @@ class ShipmentTracking(ModelSQL, ModelView):
             'cancel_tracking_number_button': {
                 'invisible': Eval('state') == 'cancelled',
             },
+            'refresh_status_button': {},
         })
 
     def cancel_tracking_number(self):
