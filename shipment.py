@@ -227,6 +227,8 @@ class ShipmentOut:
                 '%s,%d' % (p.__name__, p.id) for p in self.packages
             ]),
             ('is_master', '=', True),
+            ('state', 'not in', [
+                'cancelled', 'pending_cancellation', 'failure']),
         ], limit=1)
 
         return tracking_numbers and tracking_numbers[0].id or None
