@@ -300,6 +300,14 @@ class ShipmentOut:
         elif len(shipments) > 1:
             cls.raise_user_error('too_many_shipments')
 
+    @classmethod
+    def copy(cls, shipments, default=None):
+        if default is None:
+            default = {}
+        default = default.copy()
+        default['tracking_number'] = None
+        return super(ShipmentOut, cls).copy(shipments, default=default)
+
     @fields.depends('delivery_address', 'warehouse')
     def on_change_with_is_international_shipping(self, name=None):
         """
