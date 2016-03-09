@@ -30,6 +30,7 @@ def register():
         CarrierBoxType,
         CarrierLog,
         Address,
+        ShipmentTracking,
         ShipmentOut,
         StockMove,
         Package,
@@ -40,7 +41,6 @@ def register():
         ShippingCarrierSelector,
         AddressValidationMsg,
         AddressValidationSuggestionView,
-        ShipmentTracking,
         module='shipping', type_='model'
     )
     Pool.register(
