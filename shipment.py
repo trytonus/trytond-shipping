@@ -435,7 +435,7 @@ class ShipmentOut:
         self.carrier_service = rate['carrier_service']
         self.save()
 
-    def generate_shipping_labels(self):
+    def generate_shipping_labels(self, **kwargs):
         """
         Generates shipment label for shipment and saves labels,
         tracking numbers.
