@@ -45,8 +45,9 @@ class Sale:
         "carrier.service", "Carrier Service", domain=[
             ('id', 'in', Eval('available_carrier_services'))
         ], states={
-            "invisible": Not(Bool(Eval('carrier')))
-        }, depends=['carrier', 'available_carrier_services']
+            "invisible": Not(Bool(Eval('carrier'))),
+            "readonly": Eval('state') != 'draft',
+        }, depends=['carrier', 'available_carrier_services', 'state']
     )
     carrier_cost_method = fields.Function(
         fields.Char('Carrier Cost Method'),
