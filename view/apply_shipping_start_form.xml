@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<form string="Apply Shipping" col="2">
+    <label name="carrier"/>
+    <field name="carrier"/>
+    <label name="carrier_service"/>
+    <field name="carrier_service"/>
+    <label name="weight"/>
+    <field name="weight"/>
+</form>

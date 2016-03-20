@@ -15,7 +15,8 @@ from shipment import (
     ShippingCarrierSelector, ShippingLabelNoModules, Package, ShipmentTracking,
 )
 from stock import StockMove
-from sale import Sale, SaleLine, ReturnSale
+from sale import Sale, SaleLine, ReturnSale, ApplyShippingStart, \
+    ApplyShippingSelectRate, ApplyShipping
 from configuration import PartyConfiguration
 from log import CarrierLog
 
@@ -35,6 +36,8 @@ def register():
         Package,
         Sale,
         SaleLine,
+        ApplyShippingStart,
+        ApplyShippingSelectRate,
         GenerateShippingLabelMessage,
         ShippingLabelNoModules,
         ShippingCarrierSelector,
@@ -47,5 +50,6 @@ def register():
         GenerateShippingLabel,
         AddressValidationWizard,
         ReturnSale,
+        ApplyShipping,
         module='shipping', type_='wizard'
     )

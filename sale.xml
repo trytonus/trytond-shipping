@@ -1,13 +1,30 @@
 <?xml version="1.0"?>
 <tryton>
     <data>
-
         <record model="ir.ui.view" id="sale_view_form">
             <field name="model">sale.sale</field>
             <field name="type">form</field>
             <field name="inherit" ref="sale.sale_view_form"/>
             <field name="name">sale_view_form</field>
         </record>
-
+        <record model="ir.ui.view" id="apply_shipping_start_form">
+            <field name="model">sale.sale.apply_shipping.start</field>
+            <field name="type">form</field>
+            <field name="name">apply_shipping_start_form</field>
+        </record>
+        <record model="ir.ui.view" id="apply_shipping_select_rate_form">
+            <field name="model">sale.sale.apply_shipping.select_rate</field>
+            <field name="type">form</field>
+            <field name="name">apply_shipping_select_rate_form</field>
+        </record>
+        <record model="ir.action.wizard" id="wizard_sale_apply_shipping">
+            <field name="name">Apply Shipping</field>
+            <field name="wiz_name">sale.sale.apply_shipping</field>
+        </record>
+        <record model="ir.action.keyword" id="act_wizard_sale_apply_shipping">
+            <field name="keyword">form_action</field>
+            <field name="model">sale.sale,-1</field>
+            <field name="action" ref="wizard_sale_apply_shipping"/>
+        </record>
     </data>
 </tryton>
