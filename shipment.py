@@ -324,7 +324,7 @@ class ShipmentOut:
 
         package, = Package.create([{
             'shipment': '%s,%d' % (self.__name__, self.id),
-            'box_type': box_type.id,
+            'box_type': box_type and box_type.id,
             'moves': [('add', self.outgoing_moves)],
         }])
         return package
