@@ -185,7 +185,7 @@ class Sale:
         self.carrier_service = rate['carrier_service']
         self.save()
 
-        shipment_cost = rate['cost']
+        shipment_cost = rate['cost_currency'].round(rate['cost'])
         if self.currency != rate['cost_currency']:
             shipment_cost = Currency.compute(
                 rate['cost_currency'], shipment_cost, self.currency
