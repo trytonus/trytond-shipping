@@ -3,10 +3,14 @@
     sale.py
 
 """
-from trytond.model import fields
+import json
+from decimal import Decimal
+
+from trytond.model import ModelView, fields
 from trytond.pool import PoolMeta, Pool
 from trytond.pyson import Eval, Not, Bool
 from trytond.transaction import Transaction
+from trytond.wizard import Wizard, StateView, Button, StateTransition
 
 __all__ = ['SaleLine', 'Sale']
 __metaclass__ = PoolMeta
@@ -331,3 +335,124 @@ class ReturnSale:
         Sale.write(Sale.browse(data['res_id']), {'carrier': None})
 
         return action, data
+
+
+class ApplyShippingStart(ModelView):
+    "Apply Shipping"
+    __name__ = "sale.sale.apply_shipping.start"
+
+    carrier = fields.Many2One("carrier", "Carrier")
+    available_carrier_services = fields.Function(
+        fields.One2Many("carrier.service", None, 'Available Carrier Services'),
+        getter="on_change_with_available_carrier_services"
+    )
+    carrier_service = fields.Many2One(
+        "carrier.service", "Service", domain=[
+            ('id', 'in', Eval('available_carrier_services'))
+        ], depends=['available_carrier_services']
+    )
+    weight = fields.Float("Weight", required=True)
+
+    @fields.depends("carrier")
+    def on_change_with_available_carrier_services(self, name=None):
+        if self.carrier:
+            return map(int, self.carrier.services)
+        return []
+
+
+class ApplyShippingSelectRate(ModelView):
+    'Select Rate'
+    __name__ = 'sale.sale.apply_shipping.select_rate'
+
+    rate = fields.Selection([], 'Rate', required=True)
+
+
+class ApplyShipping(Wizard):
+    "Apply Shipping"
+    __name__ = "sale.sale.apply_shipping"
+    start_state = 'check'
+
+    check = StateTransition()
+    start = StateView(
+        'sale.sale.apply_shipping.start',
+        'shipping.apply_shipping_start_form',
+        [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Choose Rate', 'get_rates', 'tryton-go-next'),
+        ]
+    )
+    get_rates = StateTransition()
+    select_rate = StateView(
+        'sale.sale.apply_shipping.select_rate',
+        'shipping.apply_shipping_select_rate_form',
+        [
+            Button('Back', 'start', 'tryton-go-previous'),
+            Button('Apply', 'apply_rate', 'tryton-go-next', default=True),
+        ]
+    )
+    apply_rate = StateTransition()
+
+    def default_start(self, data):
+        return {
+            "carrier": self.sale.carrier and self.sale.carrier.id,
+            "carrier_service": self.sale.carrier_service and
+            self.sale.carrier_service.id,
+            "weight": self.sale.weight,
+        }
+
+    @property
+    def sale(self):
+        Sale = Pool().get('sale.sale')
+        return Sale(Transaction().context.get('active_id'))
+
+    def transition_check(self):
+        if self.sale.state not in ('draft', 'quotation', 'confirmed'):
+            self.raise_user_error(
+                "Shipping cannot be applied in %s state" % self.sale.state
+            )
+        return 'start'
+
+    def transition_get_rates(self):
+        if self.start.carrier:
+            rates = self.sale.get_shipping_rate(
+                self.start.carrier, self.start.carrier_service, silent=True
+            )
+        else:
+            rates = self.sale.get_shipping_rates(silent=True)
+
+        result = []
+        for rate in rates:
+            key = json.dumps({
+                'display_name': rate['display_name'],
+                'cost_currency': rate['cost_currency'].id,
+                'cost': str(rate['cost']),
+                'carrier': rate['carrier'].id,
+                'carrier_service': rate['carrier_service'] and
+                rate['carrier_service'].id
+            })
+            result.append((
+                key, '%s - %s %s' % (
+                    rate['display_name'],
+                    rate['cost_currency'].code,
+                    rate['cost'],
+                )
+            ))
+        self.select_rate.__class__.rate.selection = result
+
+        return "select_rate"
+
+    def transition_apply_rate(self):
+        Currency = Pool().get('currency.currency')
+        Carrier = Pool().get('carrier')
+        CarrierService = Pool().get('carrier.service')
+
+        # Build rate object
+        rate = json.loads(self.select_rate.rate)
+        rate['cost'] = Decimal(rate['cost'])
+        rate['cost_currency'] = Currency(rate['cost_currency'])
+        rate['carrier'] = Carrier(rate['carrier'])
+        if rate['carrier_service']:
+            rate['carrier_service'] = CarrierService(rate['carrier_service'])
+
+        self.sale.apply_shipping_rate(rate)
+        return 'end'
