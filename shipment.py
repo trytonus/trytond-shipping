@@ -173,9 +173,9 @@ class ShipmentOut:
         fields.Integer('Weight Digits'), 'on_change_with_weight_digits'
     )
 
-    tracking_number = fields.Function(
-        fields.Many2One('shipment.tracking', 'Tracking Number'),
-        'get_tracking_number', searcher="search_tracking_number"
+    tracking_number = fields.Many2One(
+        'shipment.tracking', 'Tracking Number', select=True,
+        states={'readonly': Eval('state') == 'done'}, depends=['state']
     )
 
     shipping_instructions = fields.Text(
@@ -212,39 +212,6 @@ class ShipmentOut:
     def on_change_inventory_moves(self):
         with Transaction().set_context(ignore_carrier_computation=True):
             return super(ShipmentOut, self).on_change_inventory_moves()
-
-    def get_tracking_number(self, name):
-        """
-        Returns master tracking number from package
-        """
-        Tracking = Pool().get('shipment.tracking')
-
-        if not self.packages:
-            return
-
-        tracking_numbers = Tracking.search([
-            ('origin', 'in', [
-                '%s,%d' % (p.__name__, p.id) for p in self.packages
-            ]),
-            ('is_master', '=', True),
-            ('state', 'not in', [
-                'cancelled', 'pending_cancellation', 'failure']),
-        ], limit=1)
-
-        return tracking_numbers and tracking_numbers[0].id or None
-
-    @classmethod
-    def search_tracking_number(cls, name, clause):
-        Tracking = Pool().get('shipment.tracking')
-
-        tracking_numbers = Tracking.search([
-            ('origin', 'like', 'stock.package,%'),
-            ('is_master', '=', True),
-            ('tracking_number', ) + tuple(clause[1:])
-        ])
-        return [
-            ('id', 'in', set(map(lambda x: x.origin.shipment.id, tracking_numbers)))  # noqa
-        ]
 
     def get_weight(self, name=None):
         """
@@ -299,6 +266,14 @@ class ShipmentOut:
             cls.raise_user_error('no_shipments')
         elif len(shipments) > 1:
             cls.raise_user_error('too_many_shipments')
+
+    @classmethod
+    def copy(cls, shipments, default=None):
+        if default is None:
+            default = {}
+        default = default.copy()
+        default['tracking_number'] = None
+        return super(ShipmentOut, cls).copy(shipments, default=default)
 
     @fields.depends('delivery_address', 'warehouse')
     def on_change_with_is_international_shipping(self, name=None):

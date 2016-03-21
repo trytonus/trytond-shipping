@@ -715,6 +715,16 @@ class TestShipping(unittest.TestCase):
             self.setup_defaults()
 
             with Transaction().set_context({'company': self.company.id}):
+                package1, = self.Package.create([{
+                    'code': 'Package 1'
+                }])
+                # Master tracking number
+                tracking_number1, = self.Tracking.create([{
+                    'carrier': self.carrier,
+                    'tracking_number': 'AA1234',
+                    'tracking_url': 'url',
+                    'origin': '%s,%d' % (package1.__name__, package1.id)
+                }])
                 shipment1, = self.Shipment.create([{
                     'planned_date': date.today(),
                     'effective_date': date.today(),
@@ -723,7 +733,7 @@ class TestShipping(unittest.TestCase):
                         ('type', '=', 'warehouse')
                     ])[0],
                     'delivery_address': self.sale_party.addresses[0],
-                    'tracking_number': 'A12233',
+                    'tracking_number': self.Tracking.search([])[0].id
                 }])
 
                 shipment2, = self.Shipment.copy([shipment1])
@@ -891,6 +901,30 @@ class TestShipping(unittest.TestCase):
         with Transaction().start(DB_NAME, USER, context=CONTEXT):
             self.setup_defaults()
             with Transaction().set_context({'company': self.company.id}):
+                package1, = self.Package.create([{
+                    'code': 'Package 1'
+                }])
+
+                package2, = self.Package.create([{
+                    'code': 'Package 2'
+                }])
+
+                # Master tracking number
+                tracking_number1, = self.Tracking.create([{
+                    'carrier': self.carrier,
+                    'tracking_number': 'AA1234',
+                    'tracking_url': 'url',
+                    'origin': '%s,%d' % (package1.__name__, package1.id)
+                }])
+
+                # Non master tracking number
+                tracking_number2, = self.Tracking.create([{
+                    'carrier': self.carrier,
+                    'tracking_number': 'AA1234',
+                    'tracking_url': 'url',
+                    'origin': '%s,%d' % (package2.__name__, package2.id)
+                }])
+
                 shipment, = self.Shipment.create([{
                     'planned_date': date.today(),
                     'effective_date': date.today(),
@@ -899,47 +933,20 @@ class TestShipping(unittest.TestCase):
                         ('type', '=', 'warehouse')
                     ])[0],
                     'delivery_address': self.sale_party.addresses[0],
-                }])
-                package1, = self.Package.create([{
-                    'code': 'Package 1',
-                    'shipment': '%s,%d' % (shipment.__name__, shipment.id)
+                    'tracking_number': self.Tracking.search([])[0].id,
                 }])
 
-                package2, = self.Package.create([{
-                    'code': 'Package 2',
-                    'shipment': '%s,%d' % (shipment.__name__, shipment.id)
-                }])
+                for package in [package1, package2]:
+                    package.shipment = \
+                        '%s,%d' % (shipment.__name__, shipment.id)
+                    package.save()
 
-                # Master tracking number
-                tracking_number_master, = self.Tracking.create([{
-                    'carrier': self.carrier,
-                    'tracking_number': 'AA1234',
-                    'tracking_url': 'url',
-                    'origin': '%s,%d' % (package1.__name__, package1.id),
-                    'is_master': True,
-                }])
-
-                # Non master tracking number
-                tracking_number_non_master, = self.Tracking.create([{
-                    'carrier': self.carrier,
-                    'tracking_number': 'AA1234',
-                    'tracking_url': 'url',
-                    'origin': '%s,%d' % (package2.__name__, package2.id)
-                }])
                 self.assertEqual(
-                    package1.tracking_number, tracking_number_master
+                    package1.tracking_number, tracking_number1
                 )
 
                 self.assertEqual(
-                    package2.tracking_number, tracking_number_non_master
-                )
-
-                # Only master tracking number must be used by shipment
-                self.assertEqual(
-                    shipment.tracking_number, tracking_number_master
-                )
-                self.assertEqual(
-                    package1.tracking_number, shipment.tracking_number
+                    package2.tracking_number, tracking_number2
                 )
 
                 self.assertEqual(
