@@ -342,7 +342,10 @@ class ReturnSale:
         Sale = Pool().get('sale.sale')
         action, data = super(ReturnSale, self).do_return_(action)
 
-        Sale.write(Sale.browse(data['res_id']), {'carrier': None})
+        Sale.write(Sale.browse(data['res_id']), {
+            'carrier': None,
+            'carrier_service': None,
+        })
 
         return action, data
 
