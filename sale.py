@@ -396,7 +396,7 @@ class ApplyShipping(Wizard):
         'sale.sale.apply_shipping.select_rate',
         'shipping.apply_shipping_select_rate_form',
         [
-            Button('Back', 'start', 'tryton-go-previous'),
+            Button('Cancel', 'end', 'tryton-go-previous'),
             Button('Apply', 'apply_rate', 'tryton-go-next', default=True),
         ]
     )
