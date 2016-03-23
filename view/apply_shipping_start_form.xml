@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <form string="Apply Shipping" col="2">
     <label name="carrier"/>
-    <field name="carrier"/>
+    <field name="carrier" widget="selection"/>
     <label name="carrier_service"/>
-    <field name="carrier_service"/>
+    <field name="carrier_service" widget="selection"/>
     <label name="weight"/>
     <field name="weight"/>
 </form>
