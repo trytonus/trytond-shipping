@@ -59,6 +59,11 @@ class Sale:
         "on_change_with_carrier_cost_method"
     )
 
+    @classmethod
+    @ModelView.button_action('shipping.wizard_sale_apply_shipping')
+    def apply_shipping(cls, sales):
+        pass
+
     @fields.depends("carrier")
     def on_change_with_carrier_cost_method(self, name=None):
         if self.carrier:
@@ -82,6 +87,13 @@ class Sale:
         super(Sale, cls).__setup__()
         cls._error_messages.update({
             'warehouse_address_missing': 'Warehouse address is missing',
+        })
+        cls._buttons.update({
+            'apply_shipping': {
+                "invisible": ~Eval('state').in_([
+                    'draft', 'quotation', 'confirmed'
+                ])
+            }
         })
 
     @fields.depends('weight_uom')
@@ -377,7 +389,12 @@ class ApplyShippingSelectRate(ModelView):
     'Select Rate'
     __name__ = 'sale.sale.apply_shipping.select_rate'
 
-    rate = fields.Selection([], 'Rate', required=True)
+    rate = fields.Selection([], 'Rate', required=True, sort=False)
+
+    @classmethod
+    def default_rate(cls):
+        # Fill the first selection value
+        return cls.rate.selection and cls.rate.selection[0][0] or None
 
 
 class ApplyShipping(Wizard):
@@ -391,7 +408,7 @@ class ApplyShipping(Wizard):
         'shipping.apply_shipping_start_form',
         [
             Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Choose Rate', 'get_rates', 'tryton-go-next'),
+            Button('Choose Rate', 'get_rates', 'tryton-go-next', default=True),
         ]
     )
     get_rates = StateTransition()
@@ -399,7 +416,7 @@ class ApplyShipping(Wizard):
         'sale.sale.apply_shipping.select_rate',
         'shipping.apply_shipping_select_rate_form',
         [
-            Button('Cancel', 'end', 'tryton-go-previous'),
+            Button('Cancel', 'end', 'tryton-cancel'),
             Button('Apply', 'apply_rate', 'tryton-go-next', default=True),
         ]
     )
@@ -433,8 +450,9 @@ class ApplyShipping(Wizard):
         else:
             rates = self.sale.get_shipping_rates(silent=True)
 
+        sorted_rates = sorted(rates, key=lambda r: Decimal("%s" % r['cost']))
         result = []
-        for rate in rates:
+        for rate in sorted_rates:
             key = json.dumps({
                 'display_name': rate['display_name'],
                 'cost_currency': rate['cost_currency'].id,
@@ -443,13 +461,7 @@ class ApplyShipping(Wizard):
                 'carrier_service': rate['carrier_service'] and
                 rate['carrier_service'].id
             })
-            result.append((
-                key, '%s - %s %s' % (
-                    rate['display_name'],
-                    rate['cost_currency'].code,
-                    rate['cost'],
-                )
-            ))
+            result.append((key, rate['display_name']))
         self.select_rate.__class__.rate.selection = result
 
         return "select_rate"

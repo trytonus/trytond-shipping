@@ -20,6 +20,7 @@
         <record model="ir.action.wizard" id="wizard_sale_apply_shipping">
             <field name="name">Apply Shipping</field>
             <field name="wiz_name">sale.sale.apply_shipping</field>
+            <field name="model">sale.sale</field>
         </record>
         <record model="ir.action.keyword" id="act_wizard_sale_apply_shipping">
             <field name="keyword">form_action</field>
