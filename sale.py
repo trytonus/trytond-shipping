@@ -257,12 +257,7 @@ class Sale:
                 'cost_currency': currency,
                 'carrier': carrier,
             }
-            display_name = "%s %s" % (
-                carrier.rec_name, format_currency(
-                    rate_dict['cost'], rate_dict['cost_currency'].code,
-                    locale=Transaction().language
-                )
-            )
+            display_name = carrier.rec_name
             rate_dict['display_name'] = display_name
             return [rate_dict]
 
@@ -461,7 +456,11 @@ class ApplyShipping(Wizard):
                 'carrier_service': rate['carrier_service'] and
                 rate['carrier_service'].id
             })
-            result.append((key, rate['display_name']))
+            display_name = "%s %s" % (rate['display_name'], format_currency(
+                rate['cost'], rate['cost_currency'].code,
+                locale=Transaction().language
+            ))
+            result.append((key, display_name))
         self.select_rate.__class__.rate.selection = result
 
         return "select_rate"
