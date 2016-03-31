@@ -8,7 +8,6 @@ from trytond.pool import PoolMeta, Pool
 from trytond.wizard import Wizard, StateView, Button, StateTransition
 from trytond.pyson import Eval, Or, Bool, Id
 from trytond.transaction import Transaction
-from babel.numbers import format_currency
 
 __metaclass__ = PoolMeta
 __all__ = [
@@ -376,18 +375,12 @@ class ShipmentOut:
         if carrier.carrier_cost_method == 'product':
             currency = Company(Transaction().context['company']).currency
             rate_dict = {
+                'display_name': carrier.rec_name,
                 'carrier_service': carrier_service,
                 'cost': carrier.carrier_product.list_price,
                 'cost_currency': currency,
                 'carrier': carrier,
             }
-            display_name = "%s %s" % (
-                carrier.rec_name, format_currency(
-                    rate_dict['cost'], rate_dict['cost_currency'].code,
-                    locale=Transaction().language
-                )
-            )
-            rate_dict['display_name'] = display_name
             return [rate_dict]
 
         return []
