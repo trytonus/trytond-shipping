@@ -4,4 +4,6 @@
     <field name="name"/>
     <label name="carrier_cost_method"/>
     <field name="carrier_cost_method"/>
+    <label name="code"/>
+    <field name="code"/>
 </form>
