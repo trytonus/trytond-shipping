@@ -12,4 +12,7 @@
         <label name="carrier_service"/>
         <field name="carrier_service"/>
     </xpath>
+    <xpath expr="//label[@name='invoice_state']" position="before">
+        <button name="apply_shipping" string="Apply Shipping" colspan="4"/>
+    </xpath>
 </data>
