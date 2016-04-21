@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<form string="Manifest for Shipping">
+    <label name="carrier"/>
+    <field name="carrier"/>
+    <label name="warehouse"/>
+    <field name="warehouse"/>
+    <label name="close_date"/>
+    <field name="close_date"/>
+    <label name="state"/>
+    <field name="state"/>
+    <field name="shipments" colspan="4"/>
+    <button name="close" string="Close"/>
+</form>

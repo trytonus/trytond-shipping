@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<tryton>
+    <data>
+        <record model="ir.ui.view" id="ship_manifest_view_form">
+            <field name="model">shipping.manifest</field>
+            <field name="type">form</field>
+            <field name="name">manifest_view_form</field>
+        </record>
+        <record model="ir.ui.view" id="ship_manifest_view_tree">
+            <field name="model">shipping.manifest</field>
+            <field name="type">tree</field>
+            <field name="name">manifest_view_tree</field>
+        </record>
+
+        <record model="ir.action.act_window" id="act_shipping_manifest_form">
+            <field name="name">Manifest</field>
+            <field name="res_model">shipping.manifest</field>
+        </record>
+
+        <record model="ir.action.act_window.view" id="act_shipping_manifest_view_1">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="ship_manifest_view_tree"/>
+            <field name="act_window" ref="act_shipping_manifest_form"/>
+        </record>
+
+        <record model="ir.action.act_window.view" id="act_shipping_manifest_view_2">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="ship_manifest_view_form"/>
+            <field name="act_window" ref="act_shipping_manifest_form"/>
+        </record>
+
+        <menuitem name="Manifest" parent="stock.menu_stock"
+            sequence="4" id="shipping_manifest" action="act_shipping_manifest_form"/>
+    </data>
+</tryton>

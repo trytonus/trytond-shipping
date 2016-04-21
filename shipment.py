@@ -197,6 +197,9 @@ class ShipmentOut:
         fields.Char('Carrier Cost Method'),
         "on_change_with_carrier_cost_method"
     )
+    shipping_manifest = fields.Many2One(
+        "shipping.manifest", "Shipping Manifest", readonly=True, select=True
+    )
 
     @fields.depends("carrier")
     def on_change_with_carrier_cost_method(self, name=None):
