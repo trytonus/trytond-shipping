@@ -5,8 +5,10 @@
     :copyright: (c) 2016 by Fulfil.IO Inc.
     :license: see LICENSE for more details.
 """
+from datetime import datetime
+
 from trytond.model import fields, ModelView, ModelSQL, Workflow
-from trytond.pool import PoolMeta, Pool
+from trytond.pool import PoolMeta
 from trytond.pyson import Eval
 
 __metaclass__ = PoolMeta
@@ -54,10 +56,8 @@ class ShippingManifest(Workflow, ModelSQL, ModelView):
     @ModelView.button
     @Workflow.transition("closed")
     def close(cls, manifests):
-        Date = Pool().get('ir.date')
-
         for manifest in manifests:
-            manifest.close_date = Date.today()
+            manifest.close_date = datetime.utcnow()
             manifest.save()
 
     @staticmethod
