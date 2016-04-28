@@ -19,6 +19,7 @@ from sale import Sale, SaleLine, ReturnSale, ApplyShippingStart, \
     ApplyShippingSelectRate, ApplyShipping
 from configuration import PartyConfiguration
 from log import CarrierLog
+from manifest import ShippingManifest
 
 
 def register():
@@ -32,6 +33,7 @@ def register():
         CarrierLog,
         Address,
         ShipmentTracking,
+        ShippingManifest,
         ShipmentOut,
         StockMove,
         Package,
