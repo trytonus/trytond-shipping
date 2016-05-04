@@ -158,9 +158,13 @@ class ShipmentOut:
         'on_change_with_is_international_shipping'
     )
 
+    has_exception = fields.Function(
+        fields.Boolean("Has Expection"), 'get_has_exception'
+    )
+
     weight = fields.Function(
         fields.Float(
-            "Weight", digits=(16,  Eval('weight_digits', 2)),
+            "Weight", digits=(16, Eval('weight_digits', 2)),
             depends=['weight_digits'],
         ),
         'get_weight'
@@ -200,6 +204,15 @@ class ShipmentOut:
     shipping_manifest = fields.Many2One(
         "shipping.manifest", "Shipping Manifest", readonly=True, select=True
     )
+
+    def get_has_exception(self, name):
+        """
+        Returs True if sale has exception
+        """
+        for sale in self.sales:
+            if sale.has_channel_exception:
+                return True
+        return False
 
     @fields.depends("carrier")
     def on_change_with_carrier_cost_method(self, name=None):
