@@ -14,12 +14,6 @@
             <field name="model">stock.shipment.out</field>
         </record>
 
-        <record model="ir.action.keyword" id="act_wizard_generate_shipping_labels">
-            <field name="keyword">form_action</field>
-            <field name="model">stock.shipment.out,-1</field>
-            <field name="action" ref="wizard_generate_shipping_label"/>
-        </record>
-
         <record model="ir.ui.view" id="generate_shipping_label_message_view_form">
             <field name="model">shipping.label.end</field>
             <field name="type">form</field>
