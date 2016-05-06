@@ -29,7 +29,7 @@
             <field name="act_window" ref="act_shipping_manifest_form"/>
         </record>
 
-        <menuitem name="Manifest" parent="stock.menu_stock"
+        <menuitem name="Shipping Manifest" parent="stock.menu_stock"
             sequence="4" id="shipping_manifest" action="act_shipping_manifest_form"/>
     </data>
 </tryton>
