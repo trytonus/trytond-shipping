@@ -6,8 +6,10 @@
     <field name="warehouse"/>
     <label name="close_date"/>
     <field name="close_date"/>
-    <label name="state"/>
-    <field name="state"/>
     <field name="shipments" colspan="4"/>
-    <button name="close" string="Close"/>
+    <group id="buttons" colspan="4" col="3">
+        <label name="state"/>
+        <field name="state"/>
+        <button name="close" string="Close"/>
+    </group>
 </form>
