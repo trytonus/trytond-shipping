@@ -16,5 +16,30 @@
           <field name="name">carrier_form</field>
       </record>
 
+        <!--Adding active to tree-->
+        <record model="ir.ui.view" id="carrier_view_tree">
+            <field name="model">carrier</field>
+            <field name="type">tree</field>
+            <field name="inherit" ref="carrier.carrier_view_tree"/>
+            <field name="name">carrier_tree</field>
+        </record>
+        <!-- Adding Active and Disabled tabs in Carrier -->
+
+        <record model="ir.action.act_window" id="carrier.act_carrier_form">
+            <field name="name">Carrier</field>
+            <field name="context">{"active_test": False}</field>
+        </record>
+        <record model="ir.action.act_window.domain" id="act_carrier_form_active">
+            <field name="name">Active</field>
+            <field name="sequence" eval="10"/>
+            <field name="domain">[("active", "=", True)]</field>
+            <field name="act_window" ref="carrier.act_carrier_form"/>
+        </record>
+        <record model="ir.action.act_window.domain" id="act_carrier_form_inactive">
+            <field name="name">Disabled</field>
+            <field name="sequence" eval="20"/>
+            <field name="domain">[("active", "=", False)]</field>
+            <field name="act_window" ref="carrier.act_carrier_form"/>
+        </record>
   </data>
 </tryton>
