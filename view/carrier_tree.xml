@@ -1,0 +1,5 @@
+<data>
+    <xpath expr="//field[@name='carrier_cost_method']" position="after">
+        <field name="active"/>
+    </xpath>
+</data>
