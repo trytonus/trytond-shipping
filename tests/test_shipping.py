@@ -795,15 +795,17 @@ class TestShipping(unittest.TestCase):
             self.Shipment.pack(sale.shipments)
             shipment, = sale.shipments
 
-            # Create packages for shipment products
+            # Use the default package as first one and create new to get
+            # second package
             package_type, = self.PackageType.search(
                 [('name', '=', 'Shipment Package')])
-            package1, package2 = self.Package.create([{
-                'shipment': '%s,%d' % (shipment.__name__, shipment.id),
-                'type': package_type.id,
-                'moves': [('add', [shipment.outgoing_moves[0]])],
-                'override_weight': 3,
-            }, {
+            package1 = shipment.packages[0]
+            package1.type = package_type.id
+            package1.outgoing_moves = shipment.outgoing_moves[0]
+            package1.override_weight = 3
+            package1.save()
+
+            package2, = self.Package.create([{
                 'shipment': '%s,%d' % (shipment.__name__, shipment.id),
                 'type': package_type.id,
                 'moves': [('add', [shipment.outgoing_moves[1]])],
@@ -956,6 +958,52 @@ class TestShipping(unittest.TestCase):
                 self.assertEqual(
                     self.Shipment.search([('tracking_number', '=', 'AA1234')]),
                     [shipment]
+                )
+
+    def test_065_check_creation_of_package_while_creating_shipment(self):
+        """
+        Check if a package is created with all outgoing_moves of the shipment
+        when sale is processed
+        """
+        with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.setup_defaults()
+
+            with Transaction().set_context({'company': self.company.id}):
+                sale, = self.Sale.create([{
+                    'reference': 'S-1001',
+                    'payment_term': self.payment_term.id,
+                    'party': self.sale_party.id,
+                    'invoice_address': self.sale_party.addresses[0].id,
+                    'shipment_address': self.sale_party.addresses[0].id,
+                    'carrier': self.carrier,
+                }])
+
+                # Sale line with uom same as product uom
+                product = self.create_product(3, self.uom_kg)
+                sale_line, = self.SaleLine.create([{
+                    'sale': sale.id,
+                    'type': 'line',
+                    'quantity': 1,
+                    'product': product,
+                    'unit_price': Decimal('10.00'),
+                    'description': 'Test Description1',
+                    'unit': product.template.default_uom,
+                }])
+
+                self.Sale.quote([sale])
+                self.Sale.confirm([sale])
+                self.Sale.process([sale])
+
+                self.assertEqual(len(sale.shipments), 1)
+
+                shipment, = sale.shipments
+
+                self.assertEqual(len(shipment.packages), 1)
+
+                # moves of the package should be equal to ougoing_moves of
+                # shipment received from processing sale
+                self.assertEqual(
+                    shipment.outgoing_moves, shipment.packages[0].moves
                 )
 
 
