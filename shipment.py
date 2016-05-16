@@ -82,6 +82,10 @@ class Package:
             return map(int, self.shipment.carrier.box_types)
         return []
 
+    def _process_raw_label(self, data, **kwargs):
+        "Downstream modules can use this method to process label image"
+        return data
+
     def get_tracking_number(self, name):
         """
         Return first tracking number for this package
