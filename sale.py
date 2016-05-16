@@ -278,19 +278,20 @@ class Sale:
             shipments = super(Sale, self).create_shipment(shipment_type)
 
         if shipment_type == 'out' and shipments:
-            write_vals = {}
+            for shipment in shipments:
+                write_vals = {}
 
-            if self.carrier:
-                write_vals['carrier'] = self.carrier.id
-                if self.carrier_service:
-                    write_vals['carrier_service'] = self.carrier_service.id
+                if self.carrier:
+                    write_vals['carrier'] = self.carrier.id
+                    if self.carrier_service:
+                        write_vals['carrier_service'] = self.carrier_service.id
 
-            write_vals['packages'] = [('create', [{
-                'shipment': '%s,%d' % (shipment.__name__, shipment.id),
-                'moves': [('add', shipment.outgoing_moves)],
-            } for shipment in shipments])]
+                write_vals['packages'] = [('create', [{
+                    'shipment': '%s,%d' % (shipment.__name__, shipment.id),
+                    'moves': [('add', shipment.outgoing_moves)],
+                }])]
 
-            Shipment.write(list(shipments), write_vals)
+                Shipment.write([shipment], write_vals)
 
         return shipments
 
