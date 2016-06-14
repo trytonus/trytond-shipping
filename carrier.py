@@ -117,7 +117,7 @@ class BoxType(ModelSQL, ModelView):
     carrier_cost_method = fields.Selection([(None, '')], 'Carrier Cost Method')
 
     #: Code of the box.
-    code = fields.Char('Code', required=True)
+    code = fields.Char('Code')
 
     #: Length of the box.
     length = fields.Float('Length')
