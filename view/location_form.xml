@@ -1,0 +1,6 @@
+<data>
+    <xpath expr="field[@name='address']" position="after">
+        <label name="return_address"/>
+        <field name="return_address"/>
+    </xpath>
+</data>
