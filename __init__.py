@@ -20,6 +20,7 @@ from sale import Sale, SaleLine, ReturnSale, ApplyShippingStart, \
 from configuration import PartyConfiguration
 from log import CarrierLog
 from manifest import ShippingManifest
+from location import Location
 
 
 def register():
@@ -46,6 +47,7 @@ def register():
         ShippingCarrierSelector,
         AddressValidationMsg,
         AddressValidationSuggestionView,
+        Location,
         module='shipping', type_='model'
     )
     Pool.register(
