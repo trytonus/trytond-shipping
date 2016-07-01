@@ -572,31 +572,13 @@ class TestShipping(unittest.TestCase):
 
                 shipment, = sale.shipments
 
-            with Transaction().set_context(
-                    active_id=sale.shipments[0], company=self.company.id
-            ):
-                # UserError as shipment not in packed or done state.
-                with self.assertRaises(UserError):
-                    session_id, start_state, end_state = self.LabelWizard.create()  # noqa
-                    data = {
-                        start_state: {
-                            'carrier': self.carrier,
-                            'override_weight': 9,
-                            'carrier_service': shipment.carrier_service,
-                            'cost_currency': shipment.cost_currency,
-                        },
-                    }
-
-                    result = self.LabelWizard.execute(
-                        session_id, data, 'generate_labels'
-                    )
-
             self.Shipment.pack(sale.shipments)
             # Create a package for shipment products
             shipment, = sale.shipments
 
             with Transaction().set_context(
-                    active_id=sale.shipments[0], company=self.company.id
+                    active_id=sale.shipments[0], company=self.company.id,
+                    active_model="stock.shipment.out"
             ):
                 session_id, start_state, end_state = self.LabelWizard.create()
 
@@ -623,15 +605,6 @@ class TestShipping(unittest.TestCase):
                 self.assertEqual(len(shipment.packages), 1)
                 self.assertEqual(
                     shipment.packages[0].moves, shipment.outgoing_moves)
-
-                # UserError is thrown in this case.
-                # Label generation feature is unavailable in this module.
-                with self.assertRaises(UserError):
-                    result = self.LabelWizard.execute(
-                        session_id, data, 'generate_labels'
-                    )
-                # No attachments.
-                self.assertEqual(len(self.Attachment.search([])), 0)
 
     def test_0035_wizard_button(self):
         """
@@ -823,7 +796,8 @@ class TestShipping(unittest.TestCase):
 
             # CASE 1: default override_weight = override_weight of wizard
             with Transaction().set_context(
-                    active_id=sale.shipments[0], company=self.company.id
+                    active_id=sale.shipments[0], company=self.company.id,
+                    active_model='stock.shipment.out',
             ):
                 session_id, start_state, end_state = self.LabelWizard.create()
 
@@ -850,7 +824,8 @@ class TestShipping(unittest.TestCase):
 
             # CASE 2: default override_weight != override_weight of wizard
             with Transaction().set_context(
-                    active_id=sale.shipments[0], company=self.company.id
+                    active_id=sale.shipments[0], company=self.company.id,
+                    active_model="stock.shipment.out"
             ):
                 session_id, start_state, end_state = self.LabelWizard.create()
 
@@ -878,7 +853,8 @@ class TestShipping(unittest.TestCase):
 
             # CASE 3: override_weight in wizard is None
             with Transaction().set_context(
-                    active_id=sale.shipments[0], company=self.company.id
+                    active_id=sale.shipments[0], company=self.company.id,
+                    active_model="stock.shipment.out"
             ):
                 session_id, start_state, end_state = self.LabelWizard.create()
 

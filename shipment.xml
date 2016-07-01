@@ -38,10 +38,10 @@
             <field name="name">package_form</field>
         </record>
 
-       <record model="ir.ui.view" id="no_module_view_form">
-            <field name="model">shipping.label.no_modules</field>
+       <record model="ir.ui.view" id="select_rate_view_form">
+            <field name="model">shipping.label.select_rate</field>
             <field name="type">form</field>
-            <field name="name">no_module_form</field>
+            <field name="name">select_rate_view_form</field>
         </record>
 
         <record model="stock.package.type" id="shipment_package_type">
