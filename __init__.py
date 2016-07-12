@@ -12,7 +12,7 @@ from party import (
 )
 from shipment import (
     ShipmentOut, GenerateShippingLabelMessage, GenerateShippingLabel,
-    ShippingCarrierSelector, ShippingLabelNoModules, Package, ShipmentTracking,
+    ShippingCarrierSelector, SelectShippingRate
 )
 from stock import StockMove
 from sale import Sale, SaleLine, ReturnSale, ApplyShippingStart, \
@@ -21,6 +21,8 @@ from configuration import PartyConfiguration
 from log import CarrierLog
 from manifest import ShippingManifest
 from location import Location
+from package import Package
+from tracking import ShipmentTracking
 
 
 def register():
@@ -43,7 +45,7 @@ def register():
         ApplyShippingStart,
         ApplyShippingSelectRate,
         GenerateShippingLabelMessage,
-        ShippingLabelNoModules,
+        SelectShippingRate,
         ShippingCarrierSelector,
         AddressValidationMsg,
         AddressValidationSuggestionView,
