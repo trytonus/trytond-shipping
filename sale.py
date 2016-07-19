@@ -286,11 +286,6 @@ class Sale:
                     if self.carrier_service:
                         write_vals['carrier_service'] = self.carrier_service.id
 
-                write_vals['packages'] = [('create', [{
-                    'shipment': '%s,%d' % (shipment.__name__, shipment.id),
-                    'moves': [('add', shipment.outgoing_moves)],
-                }])]
-
                 Shipment.write([shipment], write_vals)
 
         return shipments
