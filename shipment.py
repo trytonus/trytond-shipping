@@ -40,7 +40,7 @@ class ShippingCarrierSelector(ModelView):
     __name__ = 'shipping.label.start'
 
     carrier = fields.Many2One("carrier", "Carrier", required=True)
-    override_weight = fields.Float("Override Weight", digits=(16,  2))
+    override_weight = fields.Float("Override Weight", digits=(16, 2))
     no_of_packages = fields.Integer('Number of packages', readonly=True)
     box_type = fields.Many2One(
         "carrier.box_type", "Box Type", required=True, domain=[

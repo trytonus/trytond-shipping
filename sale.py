@@ -28,7 +28,7 @@ class Sale:
 
     weight = fields.Function(
         fields.Float(
-            "Weight", digits=(16,  Eval('weight_digits', 2)),
+            "Weight", digits=(16, Eval('weight_digits', 2)),
             depends=['weight_digits'],
         ),
         'get_weight'
