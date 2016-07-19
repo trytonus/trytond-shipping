@@ -34,6 +34,27 @@ class ShipmentOut(ShipmentCarrierMixin):
         with Transaction().set_context(ignore_carrier_computation=True):
             return super(ShipmentOut, self).on_change_inventory_moves()
 
+    @classmethod
+    def pack(cls, shipments):
+        Package = Pool().get('stock.package')
+
+        super(ShipmentOut, cls).pack(shipments)
+
+        for shipment in shipments:
+            if not shipment.packages:
+                # No package, create a default package
+                package = Package()
+                package.shipment = shipment
+                package.moves = shipment.outgoing_moves
+                package.save()
+            else:
+                if (len(shipment.outgoing_moves) !=
+                        sum(len(p.moves) for p in shipment.packages)):
+                    cls.raise_user_error(
+                        "Not all the items are packaged for shipment #%s", (
+                            shipment.code, )
+                    )
+
 
 class ShippingCarrierSelector(ModelView):
     'View To Select Carrier'
