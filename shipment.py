@@ -34,13 +34,34 @@ class ShipmentOut(ShipmentCarrierMixin):
         with Transaction().set_context(ignore_carrier_computation=True):
             return super(ShipmentOut, self).on_change_inventory_moves()
 
+    @classmethod
+    def pack(cls, shipments):
+        Package = Pool().get('stock.package')
+
+        super(ShipmentOut, cls).pack(shipments)
+
+        for shipment in shipments:
+            if not shipment.packages:
+                # No package, create a default package
+                package = Package()
+                package.shipment = shipment
+                package.moves = shipment.outgoing_moves
+                package.save()
+            else:
+                if (len(shipment.outgoing_moves) !=
+                        sum(len(p.moves) for p in shipment.packages)):
+                    cls.raise_user_error(
+                        "Not all the items are packaged for shipment #%s", (
+                            shipment.code, )
+                    )
+
 
 class ShippingCarrierSelector(ModelView):
     'View To Select Carrier'
     __name__ = 'shipping.label.start'
 
     carrier = fields.Many2One("carrier", "Carrier", required=True)
-    override_weight = fields.Float("Override Weight", digits=(16,  2))
+    override_weight = fields.Float("Override Weight", digits=(16, 2))
     no_of_packages = fields.Integer('Number of packages', readonly=True)
     box_type = fields.Many2One(
         "carrier.box_type", "Box Type", required=True, domain=[

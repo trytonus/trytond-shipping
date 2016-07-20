@@ -28,7 +28,7 @@ class Sale:
 
     weight = fields.Function(
         fields.Float(
-            "Weight", digits=(16,  Eval('weight_digits', 2)),
+            "Weight", digits=(16, Eval('weight_digits', 2)),
             depends=['weight_digits'],
         ),
         'get_weight'
@@ -285,11 +285,6 @@ class Sale:
                     write_vals['carrier'] = self.carrier.id
                     if self.carrier_service:
                         write_vals['carrier_service'] = self.carrier_service.id
-
-                write_vals['packages'] = [('create', [{
-                    'shipment': '%s,%d' % (shipment.__name__, shipment.id),
-                    'moves': [('add', shipment.outgoing_moves)],
-                }])]
 
                 Shipment.write([shipment], write_vals)
 

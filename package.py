@@ -21,7 +21,7 @@ class Package:
 
     weight = fields.Function(
         fields.Float(
-            "Weight", digits=(16,  Eval('weight_digits', 2)),
+            "Weight", digits=(16, Eval('weight_digits', 2)),
             depends=['weight_digits'],
         ),
         'get_weight'
@@ -36,14 +36,14 @@ class Package:
 
     computed_weight = fields.Function(
         fields.Float(
-            "Computed Weight", digits=(16,  Eval('weight_digits', 2)),
+            "Computed Weight", digits=(16, Eval('weight_digits', 2)),
             depends=['weight_digits'],
         ),
         'get_computed_weight'
     )
 
     override_weight = fields.Float(
-        "Override Weight", digits=(16,  Eval('weight_digits', 2)),
+        "Override Weight", digits=(16, Eval('weight_digits', 2)),
         depends=['weight_digits'],
     )
 
