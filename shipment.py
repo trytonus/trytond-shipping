@@ -109,7 +109,7 @@ class SelectShippingRate(ModelView):
     'Select Shipping Rate'
     __name__ = 'shipping.label.select_rate'
 
-    rate = fields.Selection('get_rates', 'Rate', required=True)
+    rate = fields.Selection('get_rates', 'Rate')
 
 
 class GenerateShippingLabelMessage(ModelView):
@@ -266,10 +266,6 @@ class GenerateShippingLabel(Wizard):
                     rate['cost_currency'].code,
                 )
             ))
-        if self.start.carrier_service:
-            # If you have chosen the carrier service lets go ahead with
-            # label generation!
-            result.append(('', ''))
 
         self.select_rate.__class__.rate.selection = result
 
