@@ -109,7 +109,7 @@ class SelectShippingRate(ModelView):
     'Select Shipping Rate'
     __name__ = 'shipping.label.select_rate'
 
-    rate = fields.Selection('get_rates', 'Rate')
+    rate = fields.Selection([], 'Rate')
 
 
 class GenerateShippingLabelMessage(ModelView):
