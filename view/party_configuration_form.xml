@@ -1,5 +1,5 @@
 <data>
-    <xpath expr="/form/field[@name='party_lang']" position="after">
+    <xpath expr="/form/field[@name='party_sequence']" position="after">
         <label name="default_validation_carrier" />
         <field name="default_validation_carrier" /> 
     </xpath>

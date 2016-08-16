@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0"?>
 <form string="Shipment Label Generated" col="2">
   <image name="tryton-attachment" xexpand="0" xfill="0"/>
   <field name="message" colspan="4"/>

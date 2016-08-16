@@ -12,7 +12,7 @@ from trytond.modules.stock_package.stock import PackageMixin
 __all__ = ['ShipmentCarrierMixin']
 
 
-class ShipmentCarrierMixin(object, PackageMixin):
+class ShipmentCarrierMixin(PackageMixin):
     """
     Mixin class which implements all the fields and methods required for
     getting shipping rates and generating labels
