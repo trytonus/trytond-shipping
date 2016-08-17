@@ -3,21 +3,13 @@
     tests/test_party.py
 
 """
-import sys
-import os
 import unittest
 from decimal import Decimal
 
 import trytond.tests.test_tryton
-from trytond.tests.test_tryton import POOL, DB_NAME, USER, CONTEXT
+from trytond.tests.test_tryton import POOL, USER, with_transaction
 from trytond.transaction import Transaction
 from trytond.exceptions import UserError
-
-DIR = os.path.abspath(os.path.normpath(os.path.join(
-    __file__, '..', '..', '..', '..', '..', 'trytond'
-)))
-if os.path.isdir(DIR):
-    sys.path.insert(0, os.path.dirname(DIR))
 
 
 class TestParty(unittest.TestCase):
@@ -31,6 +23,7 @@ class TestParty(unittest.TestCase):
         this method is called before each test function execution.
         """
         trytond.tests.test_tryton.install_module('shipping')
+        trytond.tests.test_tryton.install_module('product_measurements')
 
         self.Party = POOL.get('party.party')
         self.PartyContact = POOL.get('party.contact_mechanism')
@@ -68,13 +61,11 @@ class TestParty(unittest.TestCase):
             'symbol': 'USD',
         }])
 
-        with Transaction().set_context(company=None):
-            company_party, carrier_party = self.Party.create([{
-                'name': 'Test Party',
-                'vat_number': '33065',
-            }, {
-                'name': 'Carrier Party',
-            }])
+        company_party, carrier_party = self.Party.create([{
+            'name': 'Test Party',
+        }, {
+            'name': 'Carrier Party',
+        }])
 
         self.company, = self.Company.create([{
             'party': company_party.id,
@@ -112,7 +103,6 @@ class TestParty(unittest.TestCase):
 
         self.sale_party, = self.Party.create([{
             'name': 'Test Sale Party',
-            'vat_number': '123456',
             'addresses': [('create', [{
                 'name': 'John Doe',
                 'street': '250 NE 25th St',
@@ -160,9 +150,10 @@ class TestParty(unittest.TestCase):
             'account.create_chart', type="wizard"
         )
 
-        account_template, = AccountTemplate.search(
-            [('parent', '=', None)]
-        )
+        account_template, = AccountTemplate.search([
+            ('parent', '=', None),
+            ('name', '=', 'Minimal Account Chart'),
+        ])
 
         session_id, _, _ = account_create_chart.create()
         create_chart = account_create_chart(session_id)
@@ -229,7 +220,7 @@ class TestParty(unittest.TestCase):
         # Create product
         template, = self.Template.create([{
             'name': 'Test Product',
-            'category': category.id,
+            'categories': [('add', [category.id])],
             'type': is_service and 'service' or 'goods',
             'sale_uom': self.uom_kg,
             'list_price': Decimal('10'),
@@ -237,36 +228,36 @@ class TestParty(unittest.TestCase):
             'default_uom': self.uom_kg,
             'salable': True,
             'account_revenue': account_revenue.id,
+            'weight': weight,
+            'weight_uom': weight_uom,
             'products': [
                 ('create', [{
                     'code': 'Test Product',
-                    'weight': weight,
-                    'weight_uom': weight_uom,
                 }])
             ]
         }])
 
         return template.products[0]
 
+    @with_transaction()
     def test_0010_address_validation_wizard(self):
         """
         Test the address validation wizard.
         """
-        with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            self.setup_defaults()
+        self.setup_defaults()
 
-            with Transaction().set_context(
-                active_id=self.sale_party.addresses[0].id
-            ):
-                # UserError is raised as no configuration provider is available.
-                session_id, start_state, end_state = self.AddrValWizard.create()
+        with Transaction().set_context(
+            active_id=self.sale_party.addresses[0].id
+        ):
+            # UserError is raised as no configuration provider is available.
+            session_id, start_state, end_state = self.AddrValWizard.create()
 
-                with self.assertRaises(UserError) as e:
-                    self.AddrValWizard(session_id).transition_init()
+            with self.assertRaises(UserError) as e:
+                self.AddrValWizard(session_id).transition_init()
 
-                self.assertIn(
-                    'Validation Carrier is not selected', e.exception.message
-                )
+            self.assertIn(
+                'Validation Carrier is not selected', e.exception.message
+            )
 
 
 def suite():

@@ -9,7 +9,7 @@ from decimal import Decimal
 from trytond.model import fields, ModelView
 from trytond.pool import PoolMeta, Pool
 from trytond.wizard import Wizard, StateView, Button, StateTransition
-from trytond.pyson import Eval
+from trytond.pyson import Eval, Bool
 from trytond.transaction import Transaction
 
 from .mixin import ShipmentCarrierMixin
@@ -32,7 +32,7 @@ class ShipmentOut(ShipmentCarrierMixin):
 
     def on_change_inventory_moves(self):
         with Transaction().set_context(ignore_carrier_computation=True):
-            return super(ShipmentOut, self).on_change_inventory_moves()
+            super(ShipmentOut, self).on_change_inventory_moves()
 
     @classmethod
     def pack(cls, shipments):
@@ -87,10 +87,8 @@ class ShippingCarrierSelector(ModelView):
 
     @fields.depends('carrier', 'carrier_service', 'box_type')
     def on_change_carrier(self):
-        return {
-            'carrier_service': None,
-            'box_type': None,
-        }
+        self.carrier_service = None
+        self.box_type = None
 
     @fields.depends("carrier")
     def on_change_with_available_box_types(self, name=None):
@@ -103,6 +101,14 @@ class ShippingCarrierSelector(ModelView):
         if self.carrier:
             return map(int, self.carrier.services)
         return []
+
+    @classmethod
+    def view_attributes(cls):
+        return super(ShippingCarrierSelector, cls).view_attributes() + [
+            ('//label[@name="no_of_packages"]', 'states', {
+                    'invisible': Bool(Eval('no_of_packages')),
+            })
+        ]
 
 
 class SelectShippingRate(ModelView):
