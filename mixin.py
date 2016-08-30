@@ -198,9 +198,10 @@ class ShipmentCarrierMixin(object, PackageMixin):
         """
         Usually the warehouse from which you ship
         """
-        if not self.warehouse.address and not silent:
+        if self.warehouse and self.warehouse.address:
+            return self.warehouse.address
+        if not silent:
             return self.raise_user_error('warehouse_address_missing')
-        return self.warehouse and self.warehouse.address
 
     def allow_label_generation(self):
         """
