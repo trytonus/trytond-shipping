@@ -52,7 +52,7 @@ class ShipmentOut(ShipmentCarrierMixin):
                         sum(len(p.moves) for p in shipment.packages)):
                     cls.raise_user_error(
                         "Not all the items are packaged for shipment #%s", (
-                            shipment.code, )
+                            shipment.number, )
                     )
 
 
