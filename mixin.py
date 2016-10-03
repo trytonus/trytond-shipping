@@ -84,8 +84,19 @@ class ShipmentCarrierMixin(PackageMixin):
 
     def get_weight(self, name=None):
         """
-        Returns sum of weight associated with each move line
+        Returns sum of weight associated with each package or
+        move line otherwise
         """
+        Uom = Pool().get('product.uom')
+
+        if self.packages:
+            return sum(map(
+                lambda p: Uom.compute_qty(
+                    p.weight_uom, p.weight, self.weight_uom
+                ),
+                self.packages
+            ))
+
         return sum(map(
             lambda move: move.get_weight(self.weight_uom, silent=True),
             self.carrier_cost_moves
