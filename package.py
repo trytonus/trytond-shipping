@@ -52,14 +52,23 @@ class Package:
         getter="on_change_with_available_box_types"
     )
     box_type = fields.Many2One(
-        'carrier.box_type', 'Box Types', domain=[
+        'carrier.box_type', 'Box Type', domain=[
             ('id', 'in', Eval('available_box_types'))
         ], depends=["available_box_types"]
     )
 
-    length = fields.Float('Length')
-    width = fields.Float('Width')
-    height = fields.Float('Height')
+    length = fields.Float('Length', states={
+            'invisible': Bool(Eval('box_type')),
+        }, depends=['box_type']
+    )
+    width = fields.Float('Width', states={
+            'invisible': Bool(Eval('box_type')),
+        }, depends=['box_type']
+    )
+    height = fields.Float('Height', states={
+            'invisible': Bool(Eval('box_type')),
+        }, depends=['box_type']
+    )
     distance_unit = fields.Many2One(
         'product.uom', 'Distance Unit', states={
             'required': Or(Bool(Eval('length')), Bool(

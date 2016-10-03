@@ -778,11 +778,14 @@ class TestShipping(unittest.TestCase):
         # Check weight of packages before execution
         # of wizard.
         self.assertEqual(package1.override_weight, 3.0)
+        self.assertEqual(package1.weight_uom, self.uom_pound)
         self.assertEqual(package2.override_weight, 4.0)
+        self.assertEqual(package2.weight_uom, self.uom_pound)
 
         # Also check total weight of shipment which must be sum
-        # of weight of both packages. 3 + 7 =10 kg = 22.04 Pounds
-        self.assertEqual(shipment.weight, 22.04)
+        # of weight of both packages. 3 + 4 = 7 pound
+        self.assertEqual(shipment.weight, 7)
+        self.assertEqual(shipment.weight_uom, self.uom_pound)
 
         # CASE 1: default override_weight = override_weight of wizard
         with Transaction().set_context(
