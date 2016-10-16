@@ -168,8 +168,16 @@ class Sale:
                     line for line in self.lines
                     if line.shipment_cost is not None
                 ]),
-            ]
+            ],
+            # reset the amount caches or function
+            # fields will continue to return cached values
+            'untaxed_amount_cache': None,
+            'tax_amount_cache': None,
+            'total_amount_cache': None,
         })
+        # reset the order total cache
+        if self.state not in ('draft', 'quote'):
+            Sale.store_cache([self])
 
     def _get_carrier_context(self):
         "Pass sale in the context"

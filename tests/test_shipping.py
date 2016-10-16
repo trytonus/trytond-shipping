@@ -663,12 +663,31 @@ class TestShipping(unittest.TestCase):
                 'unit': product.template.default_uom,
             }])
 
-        with Transaction().set_context(sale._get_carrier_context()):
-            sale.add_shipping_line(
-                sale.carrier.get_sale_price()[0],
-                sale.carrier.party.name
-            )
+        # add a shipping line for 1
+        sale.add_shipping_line(Decimal('1'), 'Rate 1')
         self.assertEqual(len(sale.lines), 2)
+        self.assertEqual(sale.total_amount, Decimal('11'))
+
+        # Appy again and the line should still be the same
+        sale.add_shipping_line(Decimal('2'), 'Rate 2')
+        self.assertEqual(len(sale.lines), 2)
+        self.assertEqual(sale.total_amount, Decimal('12'))
+
+        # Apply shipping in quote state
+        self.Sale.quote([sale])
+        self.assertEqual(len(sale.lines), 2)
+        self.assertEqual(sale.total_amount, Decimal('20'))
+        sale.add_shipping_line(Decimal('3'), 'Rate 3')
+        self.assertEqual(len(sale.lines), 2)
+        self.assertEqual(sale.total_amount, Decimal('13'))
+
+        # Apply shipping in confirmed state
+        self.Sale.confirm([sale])
+        self.assertEqual(len(sale.lines), 2)
+        self.assertEqual(sale.total_amount, Decimal('13'))
+        sale.add_shipping_line(Decimal('4'), 'Rate 4')
+        self.assertEqual(len(sale.lines), 2)
+        self.assertEqual(sale.total_amount, Decimal('14'))
 
     @with_transaction()
     def test_0045_check_shipment_tracking_number_copy(self):
