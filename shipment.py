@@ -3,7 +3,7 @@
     shipment.py
 
 """
-import json
+import simplejson as json
 from decimal import Decimal
 
 from trytond.model import fields, ModelView
@@ -263,8 +263,14 @@ class GenerateShippingLabel(Wizard):
                 'carrier_service': json_safe_rate['carrier_service'] and
                 json_safe_rate['carrier_service'].id,
                 'cost_currency': json_safe_rate['cost_currency'].id,
-                'cost': str(json_safe_rate['cost'])
             })
+
+            # Update when delivery date is not None
+            if json_safe_rate.get('delivery_date'):
+                json_safe_rate.update({
+                    'delivery_date': json_safe_rate[
+                        'delivery_date'].isoformat()
+                })
             result.append((
                 json.dumps(json_safe_rate), '%s %s %s' % (
                     rate['display_name'],
