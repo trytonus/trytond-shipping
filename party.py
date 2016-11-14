@@ -231,7 +231,7 @@ class AddressValidationWizard(Wizard):
         # Now perform the validation
         try:
             match_addresses = address.validate_address()
-        except:
+        except Exception:
             raise
 
         if match_addresses is True:  # pragma: no cover
