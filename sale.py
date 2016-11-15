@@ -288,7 +288,7 @@ class Sale:
                 shipment.carrier = shipment.carrier or self.carrier
                 if shipment.carrier:
                     shipment.carrier_service = shipment.carrier_service or \
-                    self.carrier_service
+                        self.carrier_service
                 shipment.save()
 
         return shipments
