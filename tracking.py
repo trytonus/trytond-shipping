@@ -30,6 +30,8 @@ class ShipmentTracking(ModelSQL, ModelView):
         'carrier', 'Carrier', required=True, readonly=True
     )
     tracking_url = fields.Char("Tracking Url", readonly=True)
+    delivery_date = fields.Date("Delivery Date", readonly=True)
+    delivery_time = fields.Time("Delivery Time", readonly=True)
     state = fields.Selection([
         ('waiting', 'Waiting'),
         ('in_transit', 'In Transit'),
