@@ -35,6 +35,7 @@ class ShipmentTracking(ModelSQL, ModelView):
     state = fields.Selection([
         ('waiting', 'Waiting'),
         ('in_transit', 'In Transit'),
+        ('exception', 'Exception'),
         ('delivered', 'Delivered'),
         ('failure', 'Failure'),
         ('returned', 'Returned'),
