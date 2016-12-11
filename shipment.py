@@ -271,6 +271,14 @@ class GenerateShippingLabel(Wizard):
                     'delivery_date': json_safe_rate[
                         'delivery_date'].isoformat()
                 })
+
+            # Update when delivery time is not None
+            if json_safe_rate.get('delivery_time'):
+                json_safe_rate.update({
+                    'delivery_time': json_safe_rate[
+                        'delivery_time'].isoformat()
+                })
+
             result.append((
                 json.dumps(json_safe_rate), '%s %s %s' % (
                     rate['display_name'],
