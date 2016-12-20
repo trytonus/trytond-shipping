@@ -37,11 +37,13 @@ class ShipmentTracking(ModelSQL, ModelView):
         ('in_transit', 'In Transit'),
         ('exception', 'Exception'),
         ('delivered', 'Delivered'),
+        ('out_for_delivery', 'Out For Delivery'),
         ('failure', 'Failure'),
         ('returned', 'Returned'),
         ('cancelled', 'Cancelled'),
+        ('unknown', 'Unknown'),
         ('pending_cancellation', 'Pending Cancellation'),
-        ], 'State', readonly=True, required=True, select=True)
+    ], 'State', readonly=True, required=True, select=True)
 
     @staticmethod
     def default_state():
