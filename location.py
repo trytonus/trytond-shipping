@@ -19,5 +19,5 @@ class Location:
             'invisible': Eval('type') != 'warehouse',
             'readonly': ~Eval('active'),
         }, depends=['type', 'active'],
-        help="Return address to print on shipping label"
+        help="Return undelivered shipments to this address"
     )
