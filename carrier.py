@@ -92,6 +92,10 @@ class Service(ModelSQL, ModelView):
     #: Code of the service.
     code = fields.Char("Code", required=True, select=True)
 
+    @staticmethod
+    def check_xml_record(records, values):
+        return True
+
 
 class CarrierService(ModelSQL):
     "Carrier - Service"
@@ -138,6 +142,10 @@ class BoxType(ModelSQL, ModelView):
             ('category', '=', Id('product', 'uom_cat_length'))
         ], depends=['length', 'width', 'height']
     )
+
+    @staticmethod
+    def check_xml_record(records, values):
+        return True
 
 
 class CarrierBoxType(ModelSQL):
