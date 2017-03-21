@@ -47,6 +47,14 @@ class Package:
         depends=['weight_digits'],
     )
 
+    override_weight_uom = fields.Many2One(
+        'product.uom', 'Override Weight UOM', domain=[
+            ('category', '=', Id('product', 'uom_cat_weight'))
+        ], states={
+            'required': Bool(Eval('override_weight')),
+        }, depends=['override_weight']
+    )
+
     available_box_types = fields.Function(
         fields.One2Many("carrier.box_type", None, "Available Box Types"),
         getter="on_change_with_available_box_types"
@@ -131,7 +139,14 @@ class Package:
         Returns package weight if weight is not overriden
         otherwise returns overriden weight
         """
-        return self.override_weight or self.get_computed_weight()
+        UOM = Pool().get('product.uom')
+        if self.override_weight:
+            return UOM.compute_qty(
+                self.override_weight_uom,
+                self.override_weight,
+                self.weight_uom
+            )
+        return self.get_computed_weight()
 
     def get_computed_weight(self, name=None):
         """
@@ -154,4 +169,11 @@ class Package:
         ModelData = Pool().get('ir.model.data')
         return ModelData.get_id(
             'product', 'uom_inch'
+        )
+
+    @staticmethod
+    def default_override_weight_uom():
+        ModelData = Pool().get('ir.model.data')
+        return ModelData.get_id(
+            'product', 'uom_pound'
         )

@@ -200,6 +200,7 @@ class GenerateShippingLabel(Wizard):
     def default_start(self, data):
         """Fill the default values for `start` state.
         """
+        UOM = Pool().get('product.uom')
         if self.shipment.allow_label_generation():
             values = {
                 'no_of_packages': len(self.shipment.packages),
@@ -211,10 +212,17 @@ class GenerateShippingLabel(Wizard):
                 'carrier': self.shipment.carrier.id,
             })
         if self.shipment.packages:
-            package_weights = [
-                p.override_weight
-                for p in self.shipment.packages if p.override_weight
-            ]
+            package_weights = []
+            for package in self.shipment.packages:
+                if not package.override_weight:
+                    continue
+                package_weights.append(
+                    UOM.compute_qty(
+                        package.override_weight_uom,
+                        package.override_weight,
+                        self.shipment.weight_uom
+                    )
+                )
             values['override_weight'] = sum(package_weights)
 
         if self.shipment.carrier_service:
@@ -247,6 +255,7 @@ class GenerateShippingLabel(Wizard):
         for package in shipment.packages:
             if per_package_weight:
                 package.override_weight = per_package_weight
+                package.override_weight_uom = shipment.weight_uom
             if self.start.box_type != package.box_type:
                 package.box_type = self.start.box_type
             package.save()

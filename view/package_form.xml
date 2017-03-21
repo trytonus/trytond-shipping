@@ -11,6 +11,8 @@
                 <field name="weight_uom"/>
                 <label name="override_weight"/>
                 <field name="override_weight"/>
+                <label name="override_weight_uom"/>
+                <field name="override_weight_uom"/>
                 <label name="tracking_number"/>
                 <field name="tracking_number"/>
             </page>
