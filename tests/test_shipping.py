@@ -492,6 +492,7 @@ class TestShipping(unittest.TestCase):
             )
 
             package.override_weight = 20
+            package.override_weight_uom = self.uom_pound.id
             package.save()
 
             # Since overridden weight is there, package weight will be
@@ -785,6 +786,7 @@ class TestShipping(unittest.TestCase):
         package1.type = package_type.id
         package1.outgoing_moves = shipment.outgoing_moves[0]
         package1.override_weight = 3
+        package1.override_weight_uom = self.uom_pound.id
         package1.save()
 
         package2, = self.Package.create([{
@@ -792,6 +794,7 @@ class TestShipping(unittest.TestCase):
             'type': package_type.id,
             'moves': [('add', [shipment.outgoing_moves[1]])],
             'override_weight': 4,
+            'override_weight_uom': self.uom_pound.id
         }])
 
         # Check weight of packages before execution
