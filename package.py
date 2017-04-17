@@ -6,6 +6,7 @@
 from trytond.model import fields
 from trytond.pool import PoolMeta, Pool
 from trytond.pyson import Eval, Or, Bool, Id
+from trytond.transaction import Transaction
 
 __metaclass__ = PoolMeta
 __all__ = ['Package']
@@ -87,10 +88,18 @@ class Package:
         ], depends=['length', 'width', 'height']
     )
 
-    @fields.depends("_parent_shipment", "_parent_shipment.carrier")
+    @fields.depends('shipment')
     def on_change_with_available_box_types(self, name=None):
-        if self.shipment.carrier:
-            return map(int, self.shipment.carrier.box_types)
+        Carrier = Pool().get('carrier')
+
+        carrier = None
+        if self.shipment:
+            carrier = self.shipment.carrier
+        elif Transaction().context.get('carrier'):
+            carrier = Carrier(Transaction().context.get('carrier'))
+
+        if carrier is not None:
+            return map(int, carrier.box_types)
         return []
 
     def _process_raw_label(self, data, **kwargs):
