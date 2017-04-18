@@ -162,6 +162,8 @@ class ShipmentCarrierMixin(PackageMixin):
                 'readonly': Eval('state') == 'done',
             }, depends=['carrier', 'state', 'cost_currency_digits']
         )
+        cls.packages.context = {'carrier': Eval('carrier')}
+        cls.packages.depends = ['carrier']
 
     @fields.depends('currency')
     def on_change_with_cost_currency_digits(self, name=None):
