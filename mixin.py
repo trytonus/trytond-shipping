@@ -320,7 +320,7 @@ class ShipmentCarrierMixin(PackageMixin):
             )
 
         self.cost = shipment_cost
-        self.cost_currency = self.cost_currency
+        self.cost_currency = rate['cost_currency']
         self.carrier = rate['carrier']
         self.carrier_service = rate['carrier_service']
         self.save()
