@@ -74,7 +74,7 @@ class Sale:
         of carrier not to calculate cost on each line change
         """
         with Transaction().set_context({'ignore_carrier_computation': True}):
-            return super(Sale, self).on_change_lines()
+            super(Sale, self).on_change_lines()
 
     @fields.depends("carrier")
     def on_change_with_available_carrier_services(self, name=None):
