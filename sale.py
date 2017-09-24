@@ -296,10 +296,10 @@ class Sale:
 
         if shipment_type == 'out' and shipments:
             for shipment in shipments:
-                shipment.carrier = shipment.carrier or self.carrier
                 if shipment.carrier:
-                    shipment.carrier_service = shipment.carrier_service or \
-                        self.carrier_service
+                    continue
+                shipment.carrier = self.carrier
+                shipment.carrier_service = self.carrier_service
                 shipment.save()
 
         return shipments
