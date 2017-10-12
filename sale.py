@@ -11,6 +11,7 @@ from trytond.pool import PoolMeta, Pool
 from trytond.pyson import Eval, Not, Bool
 from trytond.transaction import Transaction
 from trytond.wizard import Wizard, StateView, Button, StateTransition
+from trytond.rpc import RPC
 from babel.numbers import format_currency
 
 __all__ = ['SaleLine', 'Sale']
@@ -94,6 +95,9 @@ class Sale:
                     'draft', 'quotation', 'confirmed'
                 ])
             }
+        })
+        cls.__rpc__.update({
+            'apply_shipping_rate': RPC(instantiate=0)
         })
 
     @fields.depends('weight_uom')
@@ -196,33 +200,41 @@ class Sale:
         """
         This method applies shipping rate. Rate is a dictionary with following
         minimum keys:
+
             {
                 'display_name': Name to display,
                 'carrier_service': carrier.service active record,
                 'cost': cost,
-                'cost_currency': currency.currency active repord,
+                'cost_currency': currency.currency active record,
                 'carrier': carrier active record,
             }
 
         It also creates a shipment line by deleting all existing ones.
+
+        The rate could optionally have integer ids of service, carrier and
+        currency.
         """
         Currency = Pool().get('currency.currency')
+        Carrier = Pool().get('carrier')
+        CarrierService = Pool().get('carrier.service')
 
-        self.carrier = rate['carrier']
-        self.carrier_service = rate['carrier_service']
+        self.carrier = Carrier(int(rate['carrier']))
+        self.carrier_service = CarrierService(int(rate['carrier_service'])) \
+            if rate['carrier_service'] else None
         self.save()
 
-        shipment_cost = rate['cost_currency'].round(rate['cost'])
-        if self.currency != rate['cost_currency']:
+        cost_currency = Currency(int(rate['cost_currency']))
+        shipment_cost = cost_currency.round(rate['cost'])
+        if self.currency != cost_currency:
             shipment_cost = Currency.compute(
-                rate['cost_currency'], shipment_cost, self.currency
+                cost_currency, shipment_cost, self.currency
             )
 
         self.add_shipping_line(
             shipment_cost,
             rate['display_name'],
-            rate['carrier'],
-            rate['carrier_service'],
+            self.carrier,
+            self.carrier_service,
         )
 
     def get_shipping_rates(self, carriers=None, silent=False):
