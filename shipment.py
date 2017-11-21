@@ -28,7 +28,7 @@ class ShipmentOut(ShipmentCarrierMixin):
 
     @property
     def carrier_cost_moves(self):
-        return self.outgoing_moves
+        return filter(lambda m: m.state != 'cancel', self.outgoing_moves)
 
     def on_change_inventory_moves(self):
         with Transaction().set_context(ignore_carrier_computation=True):
@@ -45,7 +45,7 @@ class ShipmentOut(ShipmentCarrierMixin):
                 # No package, create a default package
                 package = Package()
                 package.shipment = shipment
-                package.moves = shipment.outgoing_moves
+                package.moves = shipment.carrier_cost_moves
                 package.save()
             else:
                 if (len(filter(lambda m: m.state != 'cancel', shipment.outgoing_moves)) !=  # noqa
