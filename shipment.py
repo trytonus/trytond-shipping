@@ -48,7 +48,7 @@ class ShipmentOut(ShipmentCarrierMixin):
                 package.moves = shipment.outgoing_moves
                 package.save()
             else:
-                if (len(shipment.outgoing_moves) !=
+                if (len(filter(lambda m: m.state != 'cancel', shipment.outgoing_moves)) !=  # noqa
                         sum(len(p.moves) for p in shipment.packages)):
                     cls.raise_user_error(
                         "Not all the items are packaged for shipment #%s", (
