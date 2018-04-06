@@ -64,7 +64,7 @@ class ShippingCarrierSelector(ModelView):
     override_weight = fields.Float("Override Weight", digits=(16, 2))
     no_of_packages = fields.Integer('Number of packages', readonly=True)
     box_type = fields.Many2One(
-        "carrier.box_type", "Box Type", required=True, domain=[
+        "carrier.box_type", "Box Type", domain=[
             ('id', 'in', Eval("available_box_types"))
         ], depends=["available_box_types"]
     )
@@ -256,7 +256,7 @@ class GenerateShippingLabel(Wizard):
             if per_package_weight:
                 package.override_weight = per_package_weight
                 package.override_weight_uom = shipment.weight_uom
-            if self.start.box_type != package.box_type:
+            if self.start.box_type and self.start.box_type != package.box_type:
                 package.box_type = self.start.box_type
             package.save()
 
