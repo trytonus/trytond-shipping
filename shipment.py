@@ -115,7 +115,7 @@ class SelectShippingRate(ModelView):
     'Select Shipping Rate'
     __name__ = 'shipping.label.select_rate'
 
-    rate = fields.Selection([], 'Rate')
+    rate = fields.Selection([], 'Select Rate')
 
 
 class GenerateShippingLabelMessage(ModelView):
@@ -299,6 +299,12 @@ class GenerateShippingLabel(Wizard):
         self.select_rate.__class__.rate.selection = result
 
         return 'select_rate'
+
+    def default_select_rate(self, field):
+        if self.select_rate.__class__.rate.selection:
+            return {
+                'rate': self.select_rate.__class__.rate.selection[0][0]
+            }
 
     def transition_generate_labels(self):
         "Generates shipping labels from data provided by earlier states"
