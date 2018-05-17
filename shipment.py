@@ -28,7 +28,9 @@ class ShipmentOut(ShipmentCarrierMixin):
 
     @property
     def carrier_cost_moves(self):
-        return filter(lambda m: m.state != 'cancel', self.outgoing_moves)
+        return filter(
+            lambda m: (m.state != 'cancel' and m.quantity), self.outgoing_moves
+        )
 
     def on_change_inventory_moves(self):
         with Transaction().set_context(ignore_carrier_computation=True):
@@ -48,7 +50,7 @@ class ShipmentOut(ShipmentCarrierMixin):
                 package.moves = shipment.carrier_cost_moves
                 package.save()
             else:
-                if (len(filter(lambda m: m.state != 'cancel', shipment.outgoing_moves)) !=  # noqa
+                if (len(shipment.carrier_cost_moves) !=
                         sum(len(p.moves) for p in shipment.packages)):
                     cls.raise_user_error(
                         "Not all the items are packaged for shipment #%s", (
