@@ -303,10 +303,12 @@ class GenerateShippingLabel(Wizard):
         return 'select_rate'
 
     def default_select_rate(self, field):
+        rate = None
         if self.select_rate.__class__.rate.selection:
-            return {
-                'rate': self.select_rate.__class__.rate.selection[0][0]
-            }
+            rate = self.select_rate.__class__.rate.selection[0][0]
+        return {
+            'rate': rate
+        }
 
     def transition_generate_labels(self):
         "Generates shipping labels from data provided by earlier states"
