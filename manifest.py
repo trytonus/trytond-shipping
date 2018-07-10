@@ -19,16 +19,26 @@ class ShippingManifest(Workflow, ModelSQL, ModelView):
     "Manifest Model for shipping."
     __name__ = "shipping.manifest"
 
-    carrier = fields.Many2One("carrier", "Carrier", required=True, select=True)
+    carrier = fields.Many2One(
+        "carrier", "Carrier", required=True, select=True,
+        states={
+            "readonly": Eval("state") == "closed",
+        },
+
+    )
     warehouse = fields.Many2One(
         "stock.location", "Warehouse", required=True, select=True,
         domain=[("type", "=", "warehouse")],
+        states={
+            "readonly": Eval("state") == "closed",
+        },
+
     )
 
     shipments = fields.One2Many(
         'stock.shipment.out', 'shipping_manifest', 'Shipments',
         states={
-            "readonly": Eval("state") == "closed"
+            "readonly": True,
         },
         domain=[
             ('carrier', '=', Eval('carrier')),
