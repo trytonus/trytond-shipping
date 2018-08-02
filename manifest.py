@@ -56,7 +56,7 @@ class ShippingManifest(Workflow, ModelSQL, ModelView):
             ('carrier', '=', Eval('carrier')),
             ('warehouse', '=', Eval('warehouse')),
             ('shipping_manifest', '=', None),
-            ('state', '=', ('done', 'packed')),
+            ('state', 'in', ('done', 'packed')),
             ('tracking_number', '!=', None)
         ], depends=['state', 'carrier', 'warehouse', 'carrier_cost_method']
     )
