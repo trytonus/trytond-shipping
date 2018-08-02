@@ -9,7 +9,7 @@ from datetime import datetime
 
 from trytond.model import fields, ModelView, ModelSQL, Workflow
 from trytond.pool import PoolMeta
-from trytond.pyson import Eval
+from trytond.pyson import Eval, Or
 
 __metaclass__ = PoolMeta
 __all__ = ["ShippingManifest"]
@@ -26,6 +26,10 @@ class ShippingManifest(Workflow, ModelSQL, ModelView):
         },
 
     )
+    carrier_cost_method = fields.Function(
+        fields.Char("Carrier Cost Method", depends=['carrier']),
+        getter='get_carrier_cost_method'
+    )
     warehouse = fields.Many2One(
         "stock.location", "Warehouse", required=True, select=True,
         domain=[("type", "=", "warehouse")],
@@ -38,7 +42,10 @@ class ShippingManifest(Workflow, ModelSQL, ModelView):
     shipments = fields.One2Many(
         'stock.shipment.out', 'shipping_manifest', 'Shipments',
         states={
-            "readonly": True,
+            "readonly": Or(
+                Eval("state") == "closed",
+                Eval('carrier_cost_method') == 'canada_post',
+            ),
         },
         domain=[
             ('carrier', '=', Eval('carrier')),
@@ -51,7 +58,7 @@ class ShippingManifest(Workflow, ModelSQL, ModelView):
             ('shipping_manifest', '=', None),
             ('state', '=', ('done', 'packed')),
             ('tracking_number', '!=', None)
-        ], depends=['state', 'carrier', 'warehouse']
+        ], depends=['state', 'carrier', 'warehouse', 'carrier_cost_method']
     )
 
     state = fields.Selection([
@@ -61,6 +68,9 @@ class ShippingManifest(Workflow, ModelSQL, ModelView):
     )
 
     close_date = fields.DateTime("Close Date", readonly=True)
+
+    def get_carrier_cost_method(self, name):
+        return self.carrier and self.carrier.carrier_cost_method
 
     @classmethod
     @ModelView.button
