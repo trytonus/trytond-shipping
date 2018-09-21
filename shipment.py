@@ -36,6 +36,18 @@ class ShipmentOut(ShipmentCarrierMixin):
         with Transaction().set_context(ignore_carrier_computation=True):
             super(ShipmentOut, self).on_change_inventory_moves()
 
+    def get_weight(self, name=None):
+        if self.packages or (self.state in ('packed', 'done')):
+            return super(ShipmentOut, self).get_weight()
+
+        inventory_moves = filter(
+            lambda m: (m.state != 'cancel' and m.quantity), self.inventory_moves
+        )
+        return sum(map(
+            lambda move: move.get_weight(self.weight_uom, silent=True),
+            inventory_moves
+        ))
+
     @classmethod
     def pack(cls, shipments):
         Package = Pool().get('stock.package')
