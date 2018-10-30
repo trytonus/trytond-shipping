@@ -51,7 +51,7 @@ class ShipmentCarrierMixin(PackageMixin):
 
     available_carrier_services = fields.Function(
         fields.One2Many("carrier.service", None, "Available Carrier Services"),
-        getter="on_change_with_available_carrier_services"
+        getter="get_available_carrier_services"
     )
     carrier_service = fields.Many2One(
         "carrier.service", "Carrier Service", domain=[
@@ -84,11 +84,18 @@ class ShipmentCarrierMixin(PackageMixin):
         Model = Pool().get(self.__name__)
         return Model.get_carrier_cost_method([self], name)[self.id]
 
+    @classmethod
+    def get_available_carrier_services(cls, records, name):
+        res = {}
+        for record in records:
+            res[record.id] = map(int, record.carrier.services) \
+                if record.carrier else []
+        return res
+
     @fields.depends('carrier')
     def on_change_with_available_carrier_services(self, name=None):
-        if self.carrier:
-            return map(int, self.carrier.services)
-        return []
+        Model = Pool().get(self.__name__)
+        return Model.get_available_carrier_services([self], name)[self.id]
 
     def get_weight(self, name=None):
         """
