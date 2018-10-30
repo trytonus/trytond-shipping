@@ -60,7 +60,7 @@ class ShipmentCarrierMixin(PackageMixin):
     )
     carrier_cost_method = fields.Function(
         fields.Char('Carrier Cost Method'),
-        "on_change_with_carrier_cost_method"
+        "get_carrier_cost_method"
     )
     shipping_manifest = fields.Many2One(
         "shipping.manifest", "Shipping Manifest", readonly=True, select=True
@@ -71,10 +71,18 @@ class ShipmentCarrierMixin(PackageMixin):
         "Moves to use for carrier cost calculation"
         return []
 
+    @classmethod
+    def get_carrier_cost_method(cls, records, name):
+        res = {}
+        for record in records:
+            res[record.id] = record.carrier.carrier_cost_method \
+                if record.carrier else None
+        return res
+
     @fields.depends("carrier")
     def on_change_with_carrier_cost_method(self, name=None):
-        if self.carrier:
-            return self.carrier.carrier_cost_method
+        Model = Pool().get(self.__name__)
+        return Model.get_carrier_cost_method([self], name)[self.id]
 
     @fields.depends('carrier')
     def on_change_with_available_carrier_services(self, name=None):
