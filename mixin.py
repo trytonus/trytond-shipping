@@ -20,7 +20,7 @@ class ShipmentCarrierMixin(PackageMixin):
 
     is_international_shipping = fields.Function(
         fields.Boolean("Is International Shipping"),
-        'on_change_with_is_international_shipping'
+        'get_is_international_shipping'
     )
 
     weight = fields.Function(
@@ -202,17 +202,26 @@ class ShipmentCarrierMixin(PackageMixin):
         default['tracking_number'] = None
         return super(ShipmentCarrierMixin, cls).copy(shipments, default=default)
 
+    @classmethod
+    def get_is_international_shipping(cls, records, name):
+        res = dict.fromkeys([r.id for r in records], False)
+
+        for record in records:
+            from_address = record._get_ship_from_address(silent=True)
+            if record.delivery_address and from_address and \
+               from_address.country and record.delivery_address.country and \
+               from_address.country != record.delivery_address.country:
+                res[record.id] = True
+
+        return res
+
     @fields.depends('delivery_address', 'warehouse')
     def on_change_with_is_international_shipping(self, name=None):
         """
         Return True if international shipping
         """
-        from_address = self._get_ship_from_address(silent=True)
-        if self.delivery_address and from_address and \
-           from_address.country and self.delivery_address.country and \
-           from_address.country != self.delivery_address.country:
-            return True
-        return False
+        Model = Pool().get(self.__name__)
+        return Model.get_is_international_shipping([self], name)[self.id]
 
     def get_weight_uom(self, name):
         """
