@@ -20,7 +20,7 @@ class ShipmentCarrierMixin(PackageMixin):
 
     is_international_shipping = fields.Function(
         fields.Boolean("Is International Shipping"),
-        'on_change_with_is_international_shipping'
+        'get_is_international_shipping'
     )
 
     weight = fields.Function(
@@ -51,7 +51,7 @@ class ShipmentCarrierMixin(PackageMixin):
 
     available_carrier_services = fields.Function(
         fields.One2Many("carrier.service", None, "Available Carrier Services"),
-        getter="on_change_with_available_carrier_services"
+        getter="get_available_carrier_services"
     )
     carrier_service = fields.Many2One(
         "carrier.service", "Carrier Service", domain=[
@@ -60,7 +60,7 @@ class ShipmentCarrierMixin(PackageMixin):
     )
     carrier_cost_method = fields.Function(
         fields.Char('Carrier Cost Method'),
-        "on_change_with_carrier_cost_method"
+        "get_carrier_cost_method"
     )
     shipping_manifest = fields.Many2One(
         "shipping.manifest", "Shipping Manifest", readonly=True, select=True
@@ -71,36 +71,54 @@ class ShipmentCarrierMixin(PackageMixin):
         "Moves to use for carrier cost calculation"
         return []
 
+    @classmethod
+    def get_carrier_cost_method(cls, records, name):
+        res = {}
+        for record in records:
+            res[record.id] = record.carrier.carrier_cost_method \
+                if record.carrier else None
+        return res
+
     @fields.depends("carrier")
     def on_change_with_carrier_cost_method(self, name=None):
-        if self.carrier:
-            return self.carrier.carrier_cost_method
+        Model = Pool().get(self.__name__)
+        return Model.get_carrier_cost_method([self], name)[self.id]
+
+    @classmethod
+    def get_available_carrier_services(cls, records, name):
+        res = {}
+        for record in records:
+            res[record.id] = map(int, record.carrier.services) \
+                if record.carrier else []
+        return res
 
     @fields.depends('carrier')
     def on_change_with_available_carrier_services(self, name=None):
-        if self.carrier:
-            return map(int, self.carrier.services)
-        return []
+        Model = Pool().get(self.__name__)
+        return Model.get_available_carrier_services([self], name)[self.id]
 
-    def get_weight(self, name=None):
+    @classmethod
+    def get_weight(cls, records, name=None):
         """
         Returns sum of weight associated with each package or
         move line otherwise
         """
         Uom = Pool().get('product.uom')
 
-        if self.packages:
-            return sum(map(
-                lambda p: Uom.compute_qty(
-                    p.weight_uom, p.weight, self.weight_uom
-                ),
-                self.packages
-            ))
-
-        return sum(map(
-            lambda move: move.get_weight(self.weight_uom, silent=True),
-            self.carrier_cost_moves
-        ))
+        res = {}
+        for record in records:
+            weight_uom = record.weight_uom
+            if record.packages:
+                res[record.id] = sum([
+                    Uom.compute_qty(p.weight_uom, p.weight, weight_uom)
+                    for p in record.packages
+                ])
+            else:
+                res[record.id] = sum([
+                    move.get_weight(weight_uom, silent=True)
+                    for move in record.carrier_cost_moves
+                ])
+        return res
 
     @fields.depends('weight_uom')
     def on_change_with_weight_digits(self, name=None):
@@ -187,17 +205,26 @@ class ShipmentCarrierMixin(PackageMixin):
         default['tracking_number'] = None
         return super(ShipmentCarrierMixin, cls).copy(shipments, default=default)
 
+    @classmethod
+    def get_is_international_shipping(cls, records, name):
+        res = dict.fromkeys([r.id for r in records], False)
+
+        for record in records:
+            from_address = record._get_ship_from_address(silent=True)
+            if record.delivery_address and from_address and \
+               from_address.country and record.delivery_address.country and \
+               from_address.country != record.delivery_address.country:
+                res[record.id] = True
+
+        return res
+
     @fields.depends('delivery_address', 'warehouse')
     def on_change_with_is_international_shipping(self, name=None):
         """
         Return True if international shipping
         """
-        from_address = self._get_ship_from_address(silent=True)
-        if self.delivery_address and from_address and \
-           from_address.country and self.delivery_address.country and \
-           from_address.country != self.delivery_address.country:
-            return True
-        return False
+        Model = Pool().get(self.__name__)
+        return Model.get_is_international_shipping([self], name)[self.id]
 
     def get_weight_uom(self, name):
         """
