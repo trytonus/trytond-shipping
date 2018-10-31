@@ -97,25 +97,28 @@ class ShipmentCarrierMixin(PackageMixin):
         Model = Pool().get(self.__name__)
         return Model.get_available_carrier_services([self], name)[self.id]
 
-    def get_weight(self, name=None):
+    @classmethod
+    def get_weight(cls, records, name=None):
         """
         Returns sum of weight associated with each package or
         move line otherwise
         """
         Uom = Pool().get('product.uom')
 
-        if self.packages:
-            return sum(map(
-                lambda p: Uom.compute_qty(
-                    p.weight_uom, p.weight, self.weight_uom
-                ),
-                self.packages
-            ))
-
-        return sum(map(
-            lambda move: move.get_weight(self.weight_uom, silent=True),
-            self.carrier_cost_moves
-        ))
+        res = {}
+        for record in records:
+            weight_uom = record.weight_uom
+            if record.packages:
+                res[record.id] = sum([
+                    Uom.compute_qty(p.weight_uom, p.weight, weight_uom)
+                    for p in record.packages
+                ])
+            else:
+                res[record.id] = sum([
+                    move.get_weight(weight_uom, silent=True)
+                    for move in record.carrier_cost_moves
+                ])
+        return res
 
     @fields.depends('weight_uom')
     def on_change_with_weight_digits(self, name=None):
