@@ -292,7 +292,7 @@ class ShipmentCarrierMixin(PackageMixin):
 
         rates = []
         for carrier in carriers:
-            rates.extend(self.get_shipping_rate(carrier, silent))
+            rates.extend(self.get_shipping_rate(carrier=carrier, silent=silent))
         return rates
 
     def get_shipping_rate(self, carrier, carrier_service=None, silent=False):
