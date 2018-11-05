@@ -20,7 +20,7 @@ class ShipmentCarrierMixin(PackageMixin):
 
     is_international_shipping = fields.Function(
         fields.Boolean("Is International Shipping"),
-        'get_is_international_shipping'
+        'get_is_international_shipping', loading="lazy"
     )
 
     weight = fields.Function(
@@ -211,9 +211,14 @@ class ShipmentCarrierMixin(PackageMixin):
 
         for record in records:
             from_address = record._get_ship_from_address(silent=True)
-            if record.delivery_address and from_address and \
-               from_address.country and record.delivery_address.country and \
-               from_address.country != record.delivery_address.country:
+            delivery_address = None
+            if hasattr(record, 'delivery_address'):
+                delivery_address = record.delivery_address
+            elif hasattr(record, 'contact_address'):
+                delivery_address = record.contact_address
+            if delivery_address and from_address and \
+               from_address.country and delivery_address.country and \
+               from_address.country != delivery_address.country:
                 res[record.id] = True
 
         return res
@@ -238,6 +243,9 @@ class ShipmentCarrierMixin(PackageMixin):
         """
         Usually the warehouse from which you ship
         """
+        # FIXME: from address is not always warehouse address, something
+        # like return shipment or supplier shipment makes warehouse
+        # to_address.
         if self.warehouse and self.warehouse.address:
             return self.warehouse.address
         if not silent:
