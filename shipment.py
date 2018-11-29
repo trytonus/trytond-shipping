@@ -60,17 +60,12 @@ class ShipmentOut(ShipmentCarrierMixin):
 
     @classmethod
     def pack(cls, shipments):
-        Package = Pool().get('stock.package')
-
         super(ShipmentOut, cls).pack(shipments)
 
         for shipment in shipments:
             if not shipment.packages:
                 # No package, create a default package
-                package = Package()
-                package.shipment = shipment
-                package.moves = shipment.carrier_cost_moves
-                package.save()
+                shipment._create_default_package()
             else:
                 if (len(shipment.carrier_cost_moves) !=
                         sum(len(p.moves) for p in shipment.packages)):
